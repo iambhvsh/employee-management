@@ -3,7 +3,6 @@
 from flask_employee_portal_app import app, db, User, Ticket
 
 with app.app_context():
-    # Get all employees from database
     employees = User.query.filter_by(is_admin=False).all()
 
     if employees:

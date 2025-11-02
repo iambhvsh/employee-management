@@ -10,16 +10,13 @@ from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.wrappers import Response as WerkzeugResponse
 from datetime import datetime, timezone
-from typing import Dict, Optional, Union, List, TYPE_CHECKING, Any, Tuple
+from typing import Dict, Optional, Union, List, Any, Tuple
 from pydantic import BaseModel, Field, EmailStr, field_validator, ValidationError
 import os
 import json
 import re
 import logging
 from functools import wraps
-
-if TYPE_CHECKING:
-    pass  # Type checking imports if needed in future
 
 # Configure application logging
 logging.basicConfig(
@@ -966,7 +963,7 @@ def bootstrap() -> None:
         db.session.add(admin)
         print("Created admin: Tajuddin.S / Admin@123")
 
-    employees = ["MohanTeja", "Hari", "Aparna", "ramu", "sai prasanth"]
+    employees = ["MohanTeja", "Hari", "Aparna", "Ramu", "Sai Prasanth"]
     for e in employees:
         if not User.query.filter_by(username=e).first():
             emp = User(username=e, is_admin=False)
