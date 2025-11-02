@@ -1,0 +1,82 @@
+{% extends 'layouts/employee.html' %} {% from 'ui/page.html' import header %} {%
+from 'ui/form.html' import input, checkbox %} {% block page_content %} {{
+header('My Details', 'View and manage your personal information and assets') }}
+
+{% if user.details_filled %}
+<div class="info-banner info-banner-warning">
+  <span class="material-symbols-outlined">lightbulb</span>
+  <div class="info-banner-content">
+    <strong class="info-banner-title">Need Additional Access or Assets?</strong>
+    <div class="info-banner-text">
+      <div>
+        To request new access permissions or assets (VPN, biometrics, laptop
+        accessories, etc.), please raise a ticket. Admin will review and update
+        your details after approval.
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <!-- Employee details form (editable only once) -->
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <h3 class="section-header-first">Contact Information</h3>
+
+    {{ input('phone', 'Phone Number', user.phone or '', 'Enter phone number',
+    user.details_filled, 'tel') }} {{ input('email', 'Email Address', user.email
+    or '', 'Enter email address', user.details_filled, 'email') }}
+
+    <h3 class="section-header">
+      <span class="material-symbols-outlined section-header-icon"
+        >laptop_mac</span
+      >
+      Assets
+    </h3>
+
+    {{ input('laptop', 'Laptop', user.laptop or '', 'e.g., Dell XPS 15',
+    user.details_filled) }} {{ input('charger', 'Charger', user.charger or '',
+    'e.g., Dell 65W Charger', user.details_filled) }} {{ input('keyboard',
+    'Keyboard', user.keyboard or '', 'e.g., Logitech K380', user.details_filled)
+    }} {{ input('mouse', 'Mouse', user.mouse or '', 'e.g., Logitech M590',
+    user.details_filled) }} {{ input('headset', 'Headset', user.headset or '',
+    'e.g., Jabra Evolve 40', user.details_filled) }}
+
+    <h3 class="section-header">
+      <span class="material-symbols-outlined section-header-icon">lock</span>
+      Access Permissions
+    </h3>
+
+    {% set acc = user.get_access() %} {{ checkbox('vpn_access', 'VPN Access',
+    acc.vpn, user.details_filled) }} {{ checkbox('email_access', 'Email Access',
+    acc.email, user.details_filled) }} {{ checkbox('biometric_access',
+    'Biometric Access', acc.biometric, user.details_filled) }} {% if not
+    user.details_filled %}
+    <div class="form-section-divider">
+      <button type="submit" class="button-with-icon">
+        <span class="material-symbols-outlined button-icon">save</span>
+        Save Details
+      </button>
+      <p class="warning-text">
+        <span class="material-symbols-outlined warning-icon">warning</span>
+        Note: You can only edit these details once. After saving, only an admin
+        can make changes.
+      </p>
+    </div>
+    {% else %}
+    <div class="success-banner">
+      <strong class="success-banner-title">
+        <span class="material-symbols-outlined success-banner-icon"
+          >check_circle</span
+        >
+        Details Saved
+      </strong>
+      <p class="success-banner-text">
+        Your details are now locked. Contact an admin for any changes.
+      </p>
+    </div>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}

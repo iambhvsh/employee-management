@@ -1,0 +1,1158 @@
+{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
+from 'ui/card.html' import empty %} {% block page_content %} {{ header('User
+Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
+
+<div class="info-banner info-banner-primary">
+  <span class="material-symbols-outlined">info</span>
+  <div class="info-banner-content">
+    <strong class="info-banner-title">User Management</strong>
+    <div class="info-banner-text">
+      <div class="info-banner-text-item">
+        <strong>Administrators:</strong> {{ admins|length }} accounts with full
+        system access
+      </div>
+      <div class="info-banner-text-item">
+        <strong>Employees:</strong> {{ employees|length }} standard user
+        accounts
+      </div>
+      <div class="info-banner-text-last">
+        Manage user accounts, roles, and passwords from this centralized
+        interface.
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 class="section-title">
+  <span class="material-symbols-outlined card-header-icon">shield_person</span>
+  Administrators
+</h3>
+
+{% if admins %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for admin in admins %}
+      <tr>
+        <td>{{ admin.id }}</td>
+        <td><strong>{{ admin.username }}</strong></td>
+        <td>{{ admin.email or '—' }}</td>
+        <td>{{ admin.phone or '—' }}</td>
+        <td>
+          <div class="action-buttons">
+            <button
+              class="btn btn-secondary btn-sm"
+              onclick="editUser({{ admin.id }}, '{{ admin.username }}', {{ admin.is_admin|tojson }})"
+            >
+              <span class="material-symbols-outlined">edit</span>
+              <span class="btn-text">Edit</span>
+            </button>
+            {% if admin.id != current_user.id %}
+            <button
+              class="btn btn-danger btn-sm"
+              onclick="confirmDelete({{ admin.id }}, '{{ admin.username }}')"
+            >
+              <span class="material-symbols-outlined">delete</span>
+              <span class="btn-text">Delete</span>
+            </button>
+            {% else %}
+            <span class="status-badge status-approved">Current</span>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  {{ empty('shield_person', 'No administrators found', 'No administrator
+  accounts exist') }}
+</div>
+{% endif %}
+
+<h3 class="section-title">
+  <span class="material-symbols-outlined card-header-icon">group</span>
+  Employees
+</h3>
+
+{% if employees %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Username</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employees %}
+      <tr>
+        <td>{{ emp.id }}</td>
+        <td><strong>{{ emp.username }}</strong></td>
+        <td>{{ emp.email or '—' }}</td>
+        <td>{{ emp.phone or '—' }}</td>
+        <td>
+          {% if emp.details_filled %}
+          <span class="status-badge status-approved">Complete</span>
+          {% else %}
+          <span class="status-badge status-pending">Incomplete</span>
+          {% endif %}
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button
+              class="btn btn-secondary btn-sm"
+              onclick="editUser({{ emp.id }}, '{{ emp.username }}', {{ emp.is_admin|tojson }})"
+            >
+              <span class="material-symbols-outlined">edit</span>
+              <span class="btn-text">Edit</span>
+            </button>
+            <button
+              class="btn btn-danger btn-sm"
+              onclick="confirmDelete({{ emp.id }}, '{{ emp.username }}')"
+            >
+              <span class="material-symbols-outlined">delete</span>
+              <span class="btn-text">Delete</span>
+            </button>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  {{ empty('group', 'No employees found', 'No employee accounts exist') }}
+</div>
+{% endif %}
+
+<div class="card">
+  <h3>
+    <span class="material-symbols-outlined card-header-icon">person_add</span>
+    Create New User
+  </h3>
+  <form
+    method="POST"
+    action="{{ url_for('user_management_create') }}"
+    class="ticket-form"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <label>Username <span class="required-asterisk">*</span></label>
+    <input
+      type="text"
+      id="new_username"
+      name="username"
+      required
+      minlength="3"
+      maxlength="80"
+      pattern="[a-zA-Z0-9._-]+"
+      title="Username must be 3-80 characters and can only contain letters, numbers, dots, underscores, and hyphens"
+      placeholder="Enter username (min 3 characters)"
+    />
+    <div id="new_username_error" class="error-message d-none"></div>
+
+    <label>Password <span class="required-asterisk">*</span></label>
+    <input
+      type="password"
+      id="new_password"
+      name="password"
+      required
+      minlength="6"
+      maxlength="128"
+      placeholder="Minimum 6 characters"
+      title="Password must be between 6 and 128 characters"
+    />
+    <div id="new_password_error" class="error-message d-none"></div>
+
+    <label>Confirm Password <span class="required-asterisk">*</span></label>
+    <input
+      type="password"
+      id="confirm_password"
+      name="confirm_password"
+      required
+      minlength="6"
+      maxlength="128"
+      placeholder="Re-enter password"
+      title="Must match the password above"
+    />
+    <div id="confirm_password_error" class="error-message d-none"></div>
+
+    <label>Email <span class="required-asterisk">*</span></label>
+    <input
+      type="email"
+      id="new_email"
+      name="email"
+      required
+      maxlength="120"
+      placeholder="user@example.com"
+      title="Valid email format required"
+    />
+    <div id="new_email_error" class="error-message d-none"></div>
+
+    <label>Phone <span class="required-asterisk">*</span></label>
+    <input
+      type="tel"
+      id="new_phone"
+      name="phone"
+      required
+      minlength="10"
+      maxlength="20"
+      pattern="[\d\+\-\(\)\s]+"
+      placeholder="+1234567890 (min 10 digits)"
+      title="Phone number must contain at least 10 digits"
+    />
+    <div id="new_phone_error" class="error-message d-none"></div>
+
+    <label class="checkbox-container">
+      <input type="checkbox" name="is_admin" id="new_is_admin" />
+      <span>Grant Administrator Role</span>
+    </label>
+
+    <div class="form-button-group">
+      <button type="submit">
+        <span class="material-symbols-outlined button-icon-sm">check</span>
+        Create User
+      </button>
+      <button type="reset" class="btn-secondary">
+        <span class="material-symbols-outlined button-icon-sm">refresh</span>
+        Reset Form
+      </button>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h3>
+    <span class="material-symbols-outlined card-header-icon">lock_reset</span>
+    Change User Password
+  </h3>
+  <form
+    method="POST"
+    action="{{ url_for('user_management_password') }}"
+    class="ticket-form"
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <label>Select User <span class="required-asterisk">*</span></label>
+    <select
+      id="pwd_user_id"
+      name="user_id"
+      required
+      onchange="updatePasswordInfo(this)"
+    >
+      <option value="">Choose User</option>
+      <optgroup label="Administrators">
+        {% for admin in admins %}
+        <option value="{{ admin.id }}" data-username="{{ admin.username }}">
+          {{ admin.username }} (ID: {{ admin.id }})
+        </option>
+        {% endfor %}
+      </optgroup>
+      <optgroup label="Employees">
+        {% for emp in employees %}
+        <option value="{{ emp.id }}" data-username="{{ emp.username }}">
+          {{ emp.username }} (ID: {{ emp.id }})
+        </option>
+        {% endfor %}
+      </optgroup>
+    </select>
+
+    <div id="pwd_user_info" class="info-message-box">
+      <span class="material-symbols-outlined info-icon-blue">info</span>
+      <span
+        >Changing password for: <strong id="pwd_username_display"></strong
+      ></span>
+    </div>
+
+    <label>New Password <span class="required-asterisk">*</span></label>
+    <input
+      type="password"
+      id="new_password_change"
+      name="new_password"
+      required
+      minlength="6"
+      maxlength="128"
+      placeholder="Enter new password (min 6 characters)"
+      title="Password must be between 6 and 128 characters"
+    />
+
+    <label>Confirm New Password <span class="required-asterisk">*</span></label>
+    <input
+      type="password"
+      id="confirm_password_change"
+      name="confirm_password"
+      required
+      minlength="6"
+      maxlength="128"
+      placeholder="Re-enter new password"
+      title="Must match the new password above"
+    />
+
+    <div class="form-button-group">
+      <button type="submit">
+        <span class="material-symbols-outlined button-icon-sm">lock</span>
+        Update Password
+      </button>
+      <button type="reset" class="btn-secondary" onclick="hidePasswordInfo()">
+        <span class="material-symbols-outlined button-icon-sm">refresh</span>
+        Reset
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div id="editModal" class="modal-overlay">
+  <div class="modal-content-wrapper card">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <span class="material-symbols-outlined">edit</span>
+        Edit User
+      </h3>
+      <button type="button" onclick="closeEditModal()" class="modal-close-btn">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <form
+      method="POST"
+      action="{{ url_for('user_management_edit') }}"
+      class="ticket-form m-0"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" id="edit_user_id" name="user_id" />
+
+      <!-- Error Alert Box -->
+      <div
+        id="edit_error_alert"
+        class="validation-alert validation-alert-error d-none"
+      >
+        <span class="material-symbols-outlined">error</span>
+        <div>
+          <strong>Please fix the following errors:</strong>
+          <ul id="edit_error_list"></ul>
+        </div>
+      </div>
+
+      <label>Username <span class="required-asterisk">*</span></label>
+      <input
+        type="text"
+        id="edit_username"
+        name="username"
+        required
+        minlength="3"
+        maxlength="80"
+        pattern="[a-zA-Z0-9._-]+"
+        title="Username must be 3-80 characters and can only contain letters, numbers, dots, underscores, and hyphens"
+        placeholder="Enter username (min 3 characters)"
+      />
+      <div id="edit_username_error" class="error-message d-none"></div>
+
+      <div class="mt-4 mb-4">
+        <label class="checkbox-container mb-0">
+          <input type="checkbox" name="is_admin" id="edit_is_admin" />
+          <span>Grant Administrator Role</span>
+        </label>
+      </div>
+
+      <h4 class="form-section-header">
+        <span class="material-symbols-outlined">contact_mail</span>
+        Contact Information
+      </h4>
+
+      <label>Email <span class="required-asterisk">*</span></label>
+      <input
+        type="email"
+        id="edit_email"
+        name="email"
+        required
+        maxlength="120"
+        placeholder="user@example.com"
+        title="Valid email format required"
+      />
+      <div id="edit_email_error" class="error-message d-none"></div>
+
+      <label>Phone <span class="required-asterisk">*</span></label>
+      <input
+        type="tel"
+        id="edit_phone"
+        name="phone"
+        required
+        minlength="10"
+        maxlength="20"
+        pattern="[\d\+\-\(\)\s]+"
+        placeholder="+1234567890 (min 10 digits)"
+        title="Phone number must contain at least 10 digits"
+      />
+      <div id="edit_phone_error" class="error-message d-none"></div>
+
+      <h4 class="form-section-header">
+        <span class="material-symbols-outlined">devices</span>
+        Asset Information
+      </h4>
+
+      <label>Laptop <span class="required-asterisk">*</span></label>
+      <input
+        type="text"
+        id="edit_laptop"
+        name="laptop"
+        required
+        maxlength="200"
+        placeholder="Laptop model/serial number"
+        title="Maximum 200 characters"
+      />
+      <div id="edit_laptop_error" class="error-message d-none"></div>
+
+      <label>Charger <span class="required-asterisk">*</span></label>
+      <input
+        type="text"
+        id="edit_charger"
+        name="charger"
+        required
+        maxlength="200"
+        placeholder="Charger model/serial number"
+        title="Maximum 200 characters"
+      />
+      <div id="edit_charger_error" class="error-message d-none"></div>
+
+      <label>Keyboard <span class="required-asterisk">*</span></label>
+      <input
+        type="text"
+        id="edit_keyboard"
+        name="keyboard"
+        required
+        maxlength="200"
+        placeholder="Keyboard model/serial number"
+        title="Maximum 200 characters"
+      />
+      <div id="edit_keyboard_error" class="error-message d-none"></div>
+
+      <label>Mouse <span class="required-asterisk">*</span></label>
+      <input
+        type="text"
+        id="edit_mouse"
+        name="mouse"
+        required
+        maxlength="200"
+        placeholder="Mouse model/serial number"
+        title="Maximum 200 characters"
+      />
+      <div id="edit_mouse_error" class="error-message d-none"></div>
+
+      <label>Headset <span class="required-asterisk">*</span></label>
+      <input
+        type="text"
+        id="edit_headset"
+        name="headset"
+        required
+        maxlength="200"
+        placeholder="Headset model/serial number"
+        title="Maximum 200 characters"
+      />
+      <div id="edit_headset_error" class="error-message d-none"></div>
+
+      <h4 class="form-section-header">
+        <span class="material-symbols-outlined">security</span>
+        Access Permissions
+      </h4>
+
+      <label class="checkbox-container">
+        <input type="checkbox" name="vpn_access" id="edit_vpn_access" />
+        <span>VPN Access</span>
+      </label>
+
+      <label class="checkbox-container">
+        <input type="checkbox" name="email_access" id="edit_email_access" />
+        <span>Email Access</span>
+      </label>
+
+      <label class="checkbox-container">
+        <input
+          type="checkbox"
+          name="biometric_access"
+          id="edit_biometric_access"
+        />
+        <span>Biometric Access</span>
+      </label>
+
+      <div class="form-button-group mt-5">
+        <button type="submit" id="edit_submit_btn">
+          <span class="material-symbols-outlined button-icon-sm">save</span>
+          Save Changes
+        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="attemptCloseEditModal()"
+        >
+          <span class="material-symbols-outlined button-icon-sm">close</span>
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div id="deleteModal" class="modal-overlay">
+  <div class="modal-content-wrapper modal-sm card">
+    <div class="modal-header">
+      <h3 class="modal-title modal-title-danger">
+        <span class="material-symbols-outlined">warning</span>
+        Confirm Deletion
+      </h3>
+      <button onclick="closeDeleteModal()" class="modal-close-btn">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-text">
+        Are you sure you want to delete user
+        <strong id="delete_username_display"></strong>?
+      </p>
+      <p class="modal-warning-box">
+        This action cannot be undone. All associated tickets will remain but be
+        orphaned.
+      </p>
+    </div>
+    <form method="POST" action="{{ url_for('user_management_delete') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" id="delete_user_id" name="user_id" />
+
+      <div class="form-button-group">
+        <button type="submit" class="btn-danger">
+          <span class="material-symbols-outlined button-icon-sm">delete</span>
+          Delete User
+        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          onclick="closeDeleteModal()"
+        >
+          <span class="material-symbols-outlined button-icon-sm">close</span>
+          Cancel
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  // Validation Utilities
+  function validateUsername(username) {
+    if (!username || username.trim().length === 0) {
+      return "Username is required";
+    }
+    if (username.length < 3) {
+      return "Username must be at least 3 characters long";
+    }
+    if (username.length > 80) {
+      return "Username cannot exceed 80 characters";
+    }
+    if (!/^[a-zA-Z0-9._-]+$/.test(username)) {
+      return "Username can only contain letters, numbers, dots, underscores, and hyphens";
+    }
+    return null;
+  }
+
+  function validatePassword(password) {
+    if (!password || password.length === 0) {
+      return "Password is required";
+    }
+    if (password.length < 6) {
+      return "Password must be at least 6 characters long";
+    }
+    if (password.length > 128) {
+      return "Password is too long (maximum 128 characters)";
+    }
+    return null;
+  }
+
+  function validateEmail(email) {
+    if (!email || email.trim().length === 0) {
+      return "Email is required";
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return "Invalid email format (e.g., user@example.com)";
+    }
+    if (email.length > 120) {
+      return "Email is too long (maximum 120 characters)";
+    }
+    return null;
+  }
+
+  function validatePhone(phone) {
+    if (!phone || phone.trim().length === 0) {
+      return "Phone number is required";
+    }
+    const digitsOnly = phone.replace(/\D/g, "");
+    if (digitsOnly.length < 10) {
+      return "Phone number must contain at least 10 digits";
+    }
+    if (digitsOnly.length > 15) {
+      return "Phone number is too long (maximum 15 digits)";
+    }
+    return null;
+  }
+
+  function validateAssetField(value, fieldName) {
+    if (!value || value.trim().length === 0) {
+      return `${fieldName} is required`;
+    }
+    if (value.length > 200) {
+      return `${fieldName} is too long (maximum 200 characters)`;
+    }
+    return null;
+  }
+
+  function showFieldError(fieldId, message) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(fieldId + "_error");
+
+    if (field && errorDiv) {
+      field.classList.add("invalid");
+      field.classList.remove("valid");
+      errorDiv.textContent = message;
+      errorDiv.classList.remove("d-none");
+    }
+  }
+
+  function clearFieldError(fieldId) {
+    const field = document.getElementById(fieldId);
+    const errorDiv = document.getElementById(fieldId + "_error");
+
+    if (field && errorDiv) {
+      field.classList.remove("invalid");
+      field.classList.add("valid");
+      errorDiv.classList.add("d-none");
+    }
+  }
+
+  function showModalError(errorListId, errors) {
+    const alertBox = document.getElementById("edit_error_alert");
+    const errorList = document.getElementById(errorListId);
+
+    if (alertBox && errorList) {
+      errorList.innerHTML = "";
+      errors.forEach((error) => {
+        const li = document.createElement("li");
+        li.textContent = error;
+        errorList.appendChild(li);
+      });
+      alertBox.classList.remove("d-none");
+      alertBox.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function hideModalError() {
+    const alertBox = document.getElementById("edit_error_alert");
+    if (alertBox) {
+      alertBox.classList.add("d-none");
+    }
+  }
+
+  // Edit User Modal Functions
+  function editUser(userId, username, isAdmin) {
+    hideModalError();
+
+    fetch(`/admin/users/${userId}/data`)
+      .then((response) => response.json())
+      .then((user) => {
+        document.getElementById("edit_user_id").value = userId;
+        document.getElementById("edit_username").value = username;
+        document.getElementById("edit_is_admin").checked = isAdmin;
+
+        document.getElementById("edit_email").value = user.email || "";
+        document.getElementById("edit_phone").value = user.phone || "";
+
+        document.getElementById("edit_laptop").value = user.laptop || "";
+        document.getElementById("edit_charger").value = user.charger || "";
+        document.getElementById("edit_keyboard").value = user.keyboard || "";
+        document.getElementById("edit_mouse").value = user.mouse || "";
+        document.getElementById("edit_headset").value = user.headset || "";
+
+        const access = user.access || {};
+        document.getElementById("edit_vpn_access").checked =
+          access.vpn || false;
+        document.getElementById("edit_email_access").checked =
+          access.email || false;
+        document.getElementById("edit_biometric_access").checked =
+          access.biometric || false;
+
+        // Clear any previous validation states
+        clearAllEditFieldErrors();
+
+        document.getElementById("editModal").classList.add("active");
+      })
+      .catch((error) => {
+        console.error("Error fetching user data:", error);
+        alert("❌ Failed to load user data. Please try again.");
+      });
+  }
+
+  function clearAllEditFieldErrors() {
+    const fieldIds = [
+      "edit_username",
+      "edit_email",
+      "edit_phone",
+      "edit_laptop",
+      "edit_charger",
+      "edit_keyboard",
+      "edit_mouse",
+      "edit_headset",
+    ];
+    fieldIds.forEach((id) => {
+      const field = document.getElementById(id);
+      const errorDiv = document.getElementById(id + "_error");
+      if (field) {
+        field.classList.remove("invalid", "valid");
+      }
+      if (errorDiv) {
+        errorDiv.classList.add("d-none");
+      }
+    });
+    hideModalError();
+  }
+
+  function validateEditForm() {
+    const errors = [];
+    let firstErrorField = null;
+
+    // Clear previous errors
+    hideModalError();
+
+    // Validate username
+    const username = document.getElementById("edit_username").value.trim();
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      errors.push(usernameError);
+      showFieldError("edit_username", usernameError);
+      if (!firstErrorField)
+        firstErrorField = document.getElementById("edit_username");
+    } else {
+      clearFieldError("edit_username");
+    }
+
+    // Validate email
+    const email = document.getElementById("edit_email").value.trim();
+    const emailError = validateEmail(email);
+    if (emailError) {
+      errors.push(emailError);
+      showFieldError("edit_email", emailError);
+      if (!firstErrorField)
+        firstErrorField = document.getElementById("edit_email");
+    } else {
+      clearFieldError("edit_email");
+    }
+
+    // Validate phone
+    const phone = document.getElementById("edit_phone").value.trim();
+    const phoneError = validatePhone(phone);
+    if (phoneError) {
+      errors.push(phoneError);
+      showFieldError("edit_phone", phoneError);
+      if (!firstErrorField)
+        firstErrorField = document.getElementById("edit_phone");
+    } else {
+      clearFieldError("edit_phone");
+    }
+
+    // Validate assets
+    const assets = [
+      { id: "edit_laptop", name: "Laptop" },
+      { id: "edit_charger", name: "Charger" },
+      { id: "edit_keyboard", name: "Keyboard" },
+      { id: "edit_mouse", name: "Mouse" },
+      { id: "edit_headset", name: "Headset" },
+    ];
+
+    assets.forEach((asset) => {
+      const value = document.getElementById(asset.id).value.trim();
+      const error = validateAssetField(value, asset.name);
+      if (error) {
+        errors.push(error);
+        showFieldError(asset.id, error);
+        if (!firstErrorField)
+          firstErrorField = document.getElementById(asset.id);
+      } else {
+        clearFieldError(asset.id);
+      }
+    });
+
+    if (errors.length > 0) {
+      showModalError("edit_error_list", errors);
+      if (firstErrorField) {
+        firstErrorField.focus();
+      }
+      return false;
+    }
+
+    return true;
+  }
+
+  function attemptCloseEditModal() {
+    const username = document.getElementById("edit_username").value.trim();
+    const email = document.getElementById("edit_email").value.trim();
+    const phone = document.getElementById("edit_phone").value.trim();
+    const laptop = document.getElementById("edit_laptop").value.trim();
+    const charger = document.getElementById("edit_charger").value.trim();
+    const keyboard = document.getElementById("edit_keyboard").value.trim();
+    const mouse = document.getElementById("edit_mouse").value.trim();
+    const headset = document.getElementById("edit_headset").value.trim();
+
+    const hasData =
+      username ||
+      email ||
+      phone ||
+      laptop ||
+      charger ||
+      keyboard ||
+      mouse ||
+      headset;
+
+    if (hasData) {
+      if (
+        confirm(
+          "⚠️ You have unsaved changes. Are you sure you want to close without saving?"
+        )
+      ) {
+        closeEditModal();
+      }
+    } else {
+      closeEditModal();
+    }
+  }
+
+  function closeEditModal() {
+    document.getElementById("editModal").classList.remove("active");
+    clearAllEditFieldErrors();
+  }
+
+  function confirmDelete(userId, username) {
+    document.getElementById("delete_user_id").value = userId;
+    document.getElementById("delete_username_display").textContent = username;
+    document.getElementById("deleteModal").classList.add("active");
+  }
+
+  function closeDeleteModal() {
+    document.getElementById("deleteModal").classList.remove("active");
+  }
+
+  function updatePasswordInfo(select) {
+    const infoBox = document.getElementById("pwd_user_info");
+    const usernameDisplay = document.getElementById("pwd_username_display");
+
+    if (select.value) {
+      const username = select.options[select.selectedIndex].dataset.username;
+      usernameDisplay.textContent = username;
+      infoBox.classList.add("active");
+    } else {
+      infoBox.classList.remove("active");
+    }
+  }
+
+  function hidePasswordInfo() {
+    const infoBox = document.getElementById("pwd_user_info");
+    infoBox.classList.remove("active");
+  }
+
+  // Form Validation on Submit
+  document.addEventListener("DOMContentLoaded", function () {
+    // Create User Form Validation
+    const createForm = document.querySelector(
+      'form[action*="user_management_create"]'
+    );
+    if (createForm) {
+      createForm.addEventListener("submit", function (e) {
+        const errors = [];
+
+        const username = document.getElementById("new_username").value.trim();
+        const password = document.getElementById("new_password").value;
+        const confirmPassword =
+          document.getElementById("confirm_password").value;
+        const email = document.getElementById("new_email").value.trim();
+        const phone = document.getElementById("new_phone").value.trim();
+
+        // Clear previous errors
+        [
+          "new_username",
+          "new_password",
+          "confirm_password",
+          "new_email",
+          "new_phone",
+        ].forEach((id) => {
+          const errorDiv = document.getElementById(id + "_error");
+          if (errorDiv) errorDiv.classList.add("d-none");
+          const field = document.getElementById(id);
+          if (field) field.classList.remove("invalid");
+        });
+
+        // Validate username
+        const usernameError = validateUsername(username);
+        if (usernameError) {
+          errors.push(usernameError);
+          showFieldError("new_username", usernameError);
+        } else {
+          clearFieldError("new_username");
+        }
+
+        // Validate password
+        const passwordError = validatePassword(password);
+        if (passwordError) {
+          errors.push(passwordError);
+          showFieldError("new_password", passwordError);
+        } else {
+          clearFieldError("new_password");
+        }
+
+        // Check password match
+        if (password !== confirmPassword) {
+          errors.push("Passwords do not match");
+          showFieldError("confirm_password", "Passwords do not match");
+        } else if (confirmPassword) {
+          clearFieldError("confirm_password");
+        }
+
+        // Validate email
+        const emailError = validateEmail(email);
+        if (emailError) {
+          errors.push(emailError);
+          showFieldError("new_email", emailError);
+        } else {
+          clearFieldError("new_email");
+        }
+
+        // Validate phone
+        const phoneError = validatePhone(phone);
+        if (phoneError) {
+          errors.push(phoneError);
+          showFieldError("new_phone", phoneError);
+        } else {
+          clearFieldError("new_phone");
+        }
+
+        if (errors.length > 0) {
+          e.preventDefault();
+          alert(
+            "❌ Please fix the following errors:\n\n• " + errors.join("\n• ")
+          );
+          return false;
+        }
+      });
+    }
+
+    // Edit User Form Validation
+    const editForm = document.querySelector(
+      'form[action*="user_management_edit"]'
+    );
+    if (editForm) {
+      editForm.addEventListener("submit", function (e) {
+        if (!validateEditForm()) {
+          e.preventDefault();
+          return false;
+        }
+      });
+    }
+
+    // Change Password Form Validation
+    const passwordForm = document.querySelector(
+      'form[action*="user_management_password"]'
+    );
+    if (passwordForm) {
+      passwordForm.addEventListener("submit", function (e) {
+        const errors = [];
+
+        const userId = document.getElementById("pwd_user_id").value;
+        const newPassword = document.getElementById(
+          "new_password_change"
+        ).value;
+        const confirmPassword = document.getElementById(
+          "confirm_password_change"
+        ).value;
+
+        if (!userId) {
+          errors.push("Please select a user");
+        }
+
+        const passwordError = validatePassword(newPassword);
+        if (passwordError) errors.push(passwordError);
+
+        if (newPassword !== confirmPassword) {
+          errors.push("Passwords do not match");
+        }
+
+        if (errors.length > 0) {
+          e.preventDefault();
+          alert(
+            "❌ Please fix the following errors:\n\n• " + errors.join("\n• ")
+          );
+          return false;
+        }
+      });
+    }
+
+    // Add real-time validation feedback
+    addRealTimeValidation();
+  });
+
+  // Real-time validation feedback
+  function addRealTimeValidation() {
+    // Edit form real-time validation
+    const editFields = [
+      { id: "edit_username", validator: validateUsername },
+      { id: "edit_email", validator: validateEmail },
+      { id: "edit_phone", validator: validatePhone },
+      { id: "edit_laptop", validator: (v) => validateAssetField(v, "Laptop") },
+      {
+        id: "edit_charger",
+        validator: (v) => validateAssetField(v, "Charger"),
+      },
+      {
+        id: "edit_keyboard",
+        validator: (v) => validateAssetField(v, "Keyboard"),
+      },
+      { id: "edit_mouse", validator: (v) => validateAssetField(v, "Mouse") },
+      {
+        id: "edit_headset",
+        validator: (v) => validateAssetField(v, "Headset"),
+      },
+    ];
+
+    editFields.forEach((field) => {
+      const element = document.getElementById(field.id);
+      if (element) {
+        element.addEventListener("blur", function () {
+          const error = field.validator(this.value.trim());
+          if (error) {
+            showFieldError(field.id, error);
+          } else {
+            clearFieldError(field.id);
+          }
+        });
+
+        element.addEventListener("input", function () {
+          const errorDiv = document.getElementById(field.id + "_error");
+          if (errorDiv && !errorDiv.classList.contains("d-none")) {
+            const error = field.validator(this.value.trim());
+            if (!error) {
+              clearFieldError(field.id);
+            }
+          }
+        });
+      }
+    });
+
+    // Create form real-time validation
+    const newUsername = document.getElementById("new_username");
+    if (newUsername) {
+      newUsername.addEventListener("blur", function () {
+        const error = validateUsername(this.value.trim());
+        if (error) showFieldError("new_username", error);
+        else clearFieldError("new_username");
+      });
+    }
+
+    const newEmail = document.getElementById("new_email");
+    if (newEmail) {
+      newEmail.addEventListener("blur", function () {
+        const error = validateEmail(this.value.trim());
+        if (error) showFieldError("new_email", error);
+        else clearFieldError("new_email");
+      });
+    }
+
+    const newPhone = document.getElementById("new_phone");
+    if (newPhone) {
+      newPhone.addEventListener("blur", function () {
+        const error = validatePhone(this.value.trim());
+        if (error) showFieldError("new_phone", error);
+        else clearFieldError("new_phone");
+      });
+    }
+
+    // Password validation
+    const newPassword = document.getElementById("new_password");
+    const confirmPassword = document.getElementById("confirm_password");
+
+    if (newPassword) {
+      newPassword.addEventListener("input", function () {
+        const error = validatePassword(this.value);
+        if (error) showFieldError("new_password", error);
+        else clearFieldError("new_password");
+
+        if (confirmPassword && confirmPassword.value) {
+          if (this.value !== confirmPassword.value) {
+            showFieldError("confirm_password", "Passwords do not match");
+          } else {
+            clearFieldError("confirm_password");
+          }
+        }
+      });
+    }
+
+    if (confirmPassword) {
+      confirmPassword.addEventListener("input", function () {
+        if (newPassword && this.value !== newPassword.value) {
+          showFieldError("confirm_password", "Passwords do not match");
+        } else {
+          clearFieldError("confirm_password");
+        }
+      });
+    }
+
+    // Change password form validation
+    const newPasswordChange = document.getElementById("new_password_change");
+    const confirmPasswordChange = document.getElementById(
+      "confirm_password_change"
+    );
+
+    if (newPasswordChange && confirmPasswordChange) {
+      newPasswordChange.addEventListener("input", function () {
+        if (
+          confirmPasswordChange.value &&
+          this.value !== confirmPasswordChange.value
+        ) {
+          confirmPasswordChange.style.borderColor = "var(--red)";
+        } else {
+          confirmPasswordChange.style.borderColor = "";
+        }
+      });
+
+      confirmPasswordChange.addEventListener("input", function () {
+        if (this.value !== newPasswordChange.value) {
+          this.style.borderColor = "var(--red)";
+        } else {
+          this.style.borderColor = "var(--green)";
+        }
+      });
+    }
+  }
+
+  // Close modal on escape key, but confirm first if there's data
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") {
+      const editModal = document.getElementById("editModal");
+      if (editModal && editModal.classList.contains("active")) {
+        attemptCloseEditModal();
+      }
+    }
+  });
+</script>
+{% endblock %}

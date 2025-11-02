@@ -1,0 +1,101 @@
+{% extends 'layouts/employee.html' %} {% from 'ui/page.html' import header %} {%
+from 'ui/card.html' import status, empty %} {% block page_content %} {{
+header('Raise a Ticket', 'Report issues or request assistance') }}
+
+<div class="card">
+  <h3 class="mt-0">
+    <span class="material-symbols-outlined card-header-icon-lg"
+      >confirmation_number</span
+    >
+    New Ticket
+  </h3>
+    <!-- Ticket creation form with categorized items -->
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <label>Category</label>
+    <select id="groupSelect" name="group" required>
+      {% for g in groups.keys() %}
+      <option value="{{ g }}">{{ g }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Item</label>
+    <select id="itemSelect" name="item" required>
+      
+    </select>
+
+    <label>Reason / Description</label>
+    <textarea
+      name="reason"
+      required
+      placeholder="Describe the issue or request in detail..."
+    ></textarea>
+
+    <button type="submit" class="button-with-icon form-mt-1rem">
+      <span class="material-symbols-outlined button-icon">send</span>
+      Submit Ticket
+    </button>
+  </form>
+</div>
+
+<h3 class="section-title">
+  <span class="material-symbols-outlined card-header-icon-lg">list_alt</span>
+  My Tickets
+</h3>
+
+{% if tickets %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Item</th>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td><strong>#{{ t.id }}</strong></td>
+        <td>{{ t.item }}</td>
+        <td class="ticket-reason-cell" title="{{ t.reason }}">
+          {{ t.reason }}
+        </td>
+        <td>{{ status(t.status) }}</td>
+        <td class="table-cell-secondary">
+          {{ t.created_at.strftime('%b %d, %Y') if t.created_at else 'N/A' }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  {{ empty('inbox', 'No tickets yet', 'Submit your first ticket above to get
+  started') }}
+</div>
+{% endif %}
+
+<script>
+  const groups = {{ groups | tojson }};
+  const groupSelect = document.getElementById('groupSelect');
+  const itemSelect = document.getElementById('itemSelect');
+
+  function populateItems() {
+    const g = groupSelect.value;
+    itemSelect.innerHTML = '';
+    (groups[g] || []).forEach(it => {
+      const opt = document.createElement('option');
+      opt.value = it;
+      opt.text = it;
+      itemSelect.appendChild(opt);
+    });
+  }
+
+  groupSelect.addEventListener('change', populateItems);
+  populateItems();
+</script>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
+from 'ui/ticket.html' import list as ticket_list %} {% block page_content %} {{
+header('Ticket Management', 'Review and manage employee tickets',
+'confirmation_number') }}
+
+<div class="info-banner info-banner-primary">
+  <span class="material-symbols-outlined">info</span>
+  <div class="info-banner-content">
+    <strong class="info-banner-title">Ticket-to-Access Workflow</strong>
+    <div class="info-banner-text">
+      <div class="info-banner-text-item">
+        <strong>Step 1:</strong> Review and approve tickets below.
+      </div>
+      <div class="info-banner-text-item">
+        <strong>Step 2:</strong> Update employee details to grant access/assign
+        assets.
+      </div>
+      <div class="info-banner-text-last">
+        All granted permissions and assets are recorded in employee records for
+        easy access revocation upon resignation.
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 class="section-title">
+  <span class="material-symbols-outlined card-header-icon">inbox</span>
+  All Tickets
+</h3>
+{{ ticket_list(tickets, show_employee=True, show_actions=True) }}
+
+<div class="card">
+  <h3>
+    <span class="material-symbols-outlined card-header-icon">add_circle</span>
+    Raise Ticket on Behalf of Employee
+  </h3>
+          <!-- Ticket approval/rejection form -->
+        <form method="post" action="{{ url_for('admin_raise') }}" class="ticket-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <label>Select Employee</label>
+    <select name="employee_id" required>
+      <option value="">Choose an employee</option>
+      {% for e in employees %}
+      <option value="{{ e.id }}">{{ e.username }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Category</label>
+    <select id="groupSelectAdmin" name="group" required>
+      <option value="">Select a category</option>
+      {% for g in groups.keys() %}
+      <option value="{{ g }}">{{ g }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Item</label>
+    <select id="itemSelectAdmin" name="item" required>
+      <option value="">First select a category</option>
+    </select>
+
+    <label>Reason / Description</label>
+    <textarea
+      name="reason"
+      required
+      placeholder="Describe the issue or request in detail..."
+      class="dashboard-form-textarea"
+    ></textarea>
+
+    <div class="form-button-group">
+      <button type="submit">
+        <span class="material-symbols-outlined button-icon-sm">send</span>
+        Submit Ticket
+      </button>
+      <button type="reset" class="btn-secondary">
+        <span class="material-symbols-outlined button-icon-sm">refresh</span>
+        Reset
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const groups = {{ groups|tojson }};
+  const groupSelectAdmin = document.getElementById('groupSelectAdmin');
+  const itemSelectAdmin = document.getElementById('itemSelectAdmin');
+
+  function populateAdminItems() {
+    const g = groupSelectAdmin.value;
+    itemSelectAdmin.innerHTML = '<option value="">Select an item</option>';
+    if (g && groups[g]) {
+      groups[g].forEach(it => {
+        const o = document.createElement('option');
+        o.value = it;
+        o.text = it;
+        itemSelectAdmin.appendChild(o);
+      });
+    } else {
+      itemSelectAdmin.innerHTML = '<option value="">First select a category</option>';
+    }
+  }
+
+  groupSelectAdmin.addEventListener('change', populateAdminItems);
+  populateAdminItems();
+</script>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends 'layouts/employee.html' %} {% from 'ui/page.html' import header %} {%
+from 'ui/card.html' import metric %} {% from 'ui/ticket.html' import list as
+ticket_list %} {% block page_content %}
+<div class="main-content">
+  {{ header('Dashboard', 'Track and manage your ticket requests', 'dashboard')
+  }}
+
+  
+  <div class="dashboard-grid">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-primary">
+        <span class="material-symbols-outlined">confirmation_number</span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ tickets|length }}</div>
+        <div class="stat-label">Total Tickets</div>
+        <div class="stat-trend stat-trend-primary">
+          <span class="material-symbols-outlined stat-trend-icon"
+            >receipt_long</span
+          >
+          <span>All requests</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-warning">
+        <span class="material-symbols-outlined">pending</span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">
+          {{ tickets|selectattr('status', 'equalto', 'Pending')|list|length }}
+        </div>
+        <div class="stat-label">Pending Review</div>
+        <div class="stat-trend stat-trend-warning">
+          <span class="material-symbols-outlined stat-trend-icon"
+            >schedule</span
+          >
+          <span>In review</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-success">
+        <span class="material-symbols-outlined">check_circle</span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">
+          {{ tickets|selectattr('status', 'equalto', 'Approved')|list|length }}
+        </div>
+        <div class="stat-label">Approved</div>
+        <div class="stat-trend positive">
+          <span class="material-symbols-outlined stat-trend-icon"
+            >done_all</span
+          >
+          <span>Resolved</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <h3>
+      <span class="material-symbols-outlined">add_circle</span>
+      Create New Ticket
+    </h3>
+    <form method="post" action="{{ url_for('raise_ticket') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <label>Item / Category</label>
+      <input
+        name="item"
+        required
+        placeholder="Enter item name or category"
+        class="dashboard-form-input"
+      />
+
+      <label>Description</label>
+      <textarea
+        name="reason"
+        required
+        placeholder="Provide detailed information about your request..."
+        class="dashboard-form-textarea"
+      ></textarea>
+
+      <div class="flex-gap-12">
+        <button type="submit" class="flex-1-min-180">
+          <span class="material-symbols-outlined button-icon-sm">send</span>
+          Submit Ticket
+        </button>
+        <button type="reset" class="btn-secondary flex-0-auto-p24">
+          <span class="material-symbols-outlined button-icon-sm">refresh</span>
+          Reset
+        </button>
+      </div>
+    </form>
+  </div>
+
+  
+  <h3 class="section-title">
+    <span class="material-symbols-outlined">history</span>
+    My Ticket History
+  </h3>
+  {{ ticket_list(tickets, show_employee=False, show_actions=False) }}
+</div>
+
+{% endblock %}

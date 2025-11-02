@@ -1,0 +1,313 @@
+{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
+block page_content %} {{ header('Edit Employee Details', 'Select an employee to
+view and edit their information', 'edit') }}
+
+<div class="info-banner info-banner-success">
+  <span class="material-symbols-outlined">verified_user</span>
+  <div class="info-banner-content">
+    <strong class="info-banner-title">Access & Asset Management</strong>
+    <div class="info-banner-text">
+      <div class="info-banner-text-item">
+        Record all granted access permissions and assigned assets here. This
+        ensures easy access revocation and asset recovery when an employee
+        resigns.
+      </div>
+      <div class="info-banner-text-last">
+        <strong>Remember:</strong> Only grant access after ticket approval.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="employee-edit-layout">
+  <aside class="employee-sidebar card">
+    <h3>Select Employee</h3>
+    <input
+      type="text"
+      id="empSearch"
+      placeholder="Search employees..."
+      class="search-input"
+    />
+    <select id="empSelect" class="employee-select" size="12">
+      {% for e in employees %}
+      <option value="{{ e.id }}">{{ e.username }}</option>
+      {% endfor %}
+    </select>
+  </aside>
+
+  <div class="employee-form-container card">
+    <h3>Employee Information</h3>
+    <form id="empForm" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      <input type="hidden" name="user_id" id="user_id" />
+
+      <div class="info-banner">
+        <span class="material-symbols-outlined info-icon">info</span>
+        <p>Select an employee from the list to view and edit their details</p>
+      </div>
+
+      <div class="form-section">
+        <h4 class="section-title">
+          <span class="material-symbols-outlined section-icon">phone</span>
+          Contact Information
+        </h4>
+
+        <label>Phone Number</label>
+        <input
+          type="tel"
+          name="phone"
+          id="phone"
+          placeholder="Enter phone number"
+        />
+
+        <label>Email Address</label>
+        <input
+          type="email"
+          name="email"
+          id="email"
+          placeholder="Enter email address"
+        />
+      </div>
+
+      <div class="form-section">
+        <h4 class="section-title">
+          <span class="material-symbols-outlined section-icon">laptop_mac</span>
+          Assets
+        </h4>
+
+        <label>Laptop</label>
+        <input
+          type="text"
+          name="laptop"
+          id="laptop"
+          placeholder="e.g., Dell XPS 15"
+        />
+
+        <label>Charger</label>
+        <input
+          type="text"
+          name="charger"
+          id="charger"
+          placeholder="e.g., Dell 65W Charger"
+        />
+
+        <label>Keyboard</label>
+        <input
+          type="text"
+          name="keyboard"
+          id="keyboard"
+          placeholder="e.g., Logitech K380"
+        />
+
+        <label>Mouse</label>
+        <input
+          type="text"
+          name="mouse"
+          id="mouse"
+          placeholder="e.g., Logitech M590"
+        />
+
+        <label>Headset</label>
+        <input
+          type="text"
+          name="headset"
+          id="headset"
+          placeholder="e.g., Jabra Evolve 40"
+        />
+      </div>
+
+      <div class="form-section">
+        <h4 class="section-title">
+          <span class="material-symbols-outlined section-icon">lock</span>
+          Access Permissions
+        </h4>
+
+        <label class="checkbox-label">
+          <input type="checkbox" name="vpn_access" id="vpn_access" />
+          <span>VPN Access</span>
+        </label>
+
+        <label class="checkbox-label">
+          <input type="checkbox" name="email_access" id="email_access" />
+          <span>Email Access</span>
+        </label>
+
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            name="biometric_access"
+            id="biometric_access"
+          />
+          <span>Biometric Access</span>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn">
+          <span class="material-symbols-outlined button-icon">save</span>
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const employees = {};
+  {% for e in employees %}
+    employees[{{ e.id }}] = {
+      id: {{ e.id }},
+      username: "{{ e.username|e }}",
+      phone: "{{ (e.phone or '')|e }}",
+      email: "{{ (e.email or '')|e }}",
+      laptop: "{{ (e.laptop or '')|e }}",
+      charger: "{{ (e.charger or '')|e }}",
+      keyboard: "{{ (e.keyboard or '')|e }}",
+      mouse: "{{ (e.mouse or '')|e }}",
+      headset: "{{ (e.headset or '')|e }}",
+      access: {{ e.get_access()|tojson }}
+    };
+  {% endfor %}
+
+  const empSelect = document.getElementById('empSelect');
+  const empForm = document.getElementById('empForm');
+  const empSearch = document.getElementById('empSearch');
+  const infoBanner = document.querySelector('.info-banner');
+
+  function loadEmployeeData() {
+    const id = empSelect.value;
+    const d = employees[id];
+    if (!d) {
+      resetForm();
+      return;
+    }
+
+    const fields = ['phone', 'email', 'laptop', 'charger', 'keyboard', 'mouse', 'headset'];
+    fields.forEach(field => {
+      const input = document.getElementById(field);
+      input.value = d[field] || '';
+      input.classList.remove('error');
+    });
+
+    document.getElementById('user_id').value = d.id;
+
+    const access = d.access || {};
+    document.getElementById('vpn_access').checked = access.vpn || false;
+    document.getElementById('email_access').checked = access.email || false;
+    document.getElementById('biometric_access').checked = access.biometric || false;
+
+    if (infoBanner) {
+      infoBanner.innerHTML = `
+        <span class="material-symbols-outlined info-icon">person</span>
+        <p>Editing details for <strong>${d.username}</strong></p>
+      `;
+      infoBanner.style.background = 'var(--success-light)';
+      infoBanner.style.borderColor = 'var(--success)';
+    }
+
+    updateSelectedOption(id);
+
+    const submitBtn = empForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = false;
+  }
+
+  function updateSelectedOption(selectedId) {
+    const options = empSelect.querySelectorAll('option');
+    options.forEach(opt => {
+      if (opt.value === selectedId) {
+        opt.style.background = 'var(--primary)';
+        opt.style.color = 'white';
+        opt.style.fontWeight = '500';
+      } else {
+        opt.style.background = '';
+        opt.style.color = '';
+        opt.style.fontWeight = '';
+      }
+    });
+  }
+
+  function resetForm() {
+    const fields = ['user_id', 'phone', 'email', 'laptop', 'charger', 'keyboard', 'mouse', 'headset'];
+    fields.forEach(field => {
+      const input = document.getElementById(field);
+      if (input) input.value = '';
+    });
+
+    ['vpn_access', 'email_access', 'biometric_access'].forEach(field => {
+      const checkbox = document.getElementById(field);
+      if (checkbox) checkbox.checked = false;
+    });
+
+    if (infoBanner) {
+      infoBanner.innerHTML = `
+        <span class="material-symbols-outlined info-icon">info</span>
+        <p>Select an employee from the list to view and edit their details</p>
+      `;
+      infoBanner.style.background = 'var(--primary-light)';
+      infoBanner.style.borderColor = 'var(--primary)';
+    }
+
+    const submitBtn = empForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+  }
+
+  empSelect.addEventListener('change', loadEmployeeData);
+
+  empSearch.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    let visibleCount = 0;
+
+    for (let i = 0; i < empSelect.options.length; i++) {
+      const option = empSelect.options[i];
+      const text = option.text.toLowerCase();
+      const matches = text.includes(query);
+
+      option.style.display = matches ? 'block' : 'none';
+      if (matches) visibleCount++;
+    }
+  });
+
+  empSearch.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      empSelect.focus();
+      if (empSelect.options.length > 0) {
+        empSelect.selectedIndex = 0;
+        loadEmployeeData();
+      }
+    }
+  });
+
+  empSelect.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      loadEmployeeData();
+    }
+  });
+
+  empForm.addEventListener('submit', (e) => {
+    const userId = document.getElementById('user_id').value;
+
+    if (!userId) {
+      e.preventDefault();
+      alert('Please select an employee first');
+      empSelect.focus();
+      return;
+    }
+
+    const submitBtn = empForm.querySelector('button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <span class="material-symbols-outlined spin-animation">progress_activity</span>
+        <span>Saving...</span>
+      `;
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const submitBtn = empForm.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+  });
+</script>
+{% endblock %}

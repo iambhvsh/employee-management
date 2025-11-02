@@ -1,0 +1,31 @@
+{% macro metric(icon, value, label) %}
+<div class="card metric-card">
+  <div class="metric-card-content">
+    <div class="metric-card-icon-wrapper">
+      <span class="material-symbols-outlined metric-card-icon">{{ icon }}</span>
+    </div>
+    <div>
+      <h3 class="metric-card-value">{{ value }}</h3>
+      <p class="metric-card-label">{{ label }}</p>
+    </div>
+  </div>
+</div>
+{% endmacro %} {% macro status(value) %}
+<span class="status-badge status-{{ value.lower() }}">
+  {% if value == 'Pending' %}
+  <span class="material-symbols-outlined stat-trend-icon">schedule</span>
+  {% elif value == 'Approved' %}
+  <span class="material-symbols-outlined stat-trend-icon">check_circle</span>
+  {% else %}
+  <span class="material-symbols-outlined stat-trend-icon">cancel</span>
+  {% endif %} {{ value }}
+</span>
+{% endmacro %} {% macro empty(icon, title, message) %}
+<div class="empty-state">
+  <div class="empty-state-icon-wrapper">
+    <span class="material-symbols-outlined empty-state-icon">{{ icon }}</span>
+  </div>
+  <p class="empty-state-title">{{ title }}</p>
+  <p class="empty-state-message">{{ message }}</p>
+</div>
+{% endmacro %}

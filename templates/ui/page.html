@@ -1,0 +1,12 @@
+{% macro header(title, subtitle=None, icon=None) %}
+<div class="page-header">
+  <h1>
+    {% if icon %}
+    <span class="material-symbols-outlined page-header-icon">{{ icon }}</span>
+    {% endif %} {{ title }}
+  </h1>
+  {% if subtitle %}
+  <p>{{ subtitle }}</p>
+  {% endif %}
+</div>
+{% endmacro %}

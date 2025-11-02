@@ -1,0 +1,47 @@
+{% macro input(name, label, value="", placeholder="", readonly=False, type="text", required=False) %}
+<label>{{ label }}</label>
+<input 
+  type="{{ type }}" 
+  name="{{ name }}" 
+  value="{{ value }}" 
+  {% if readonly %}readonly{% endif %}
+  {% if required %}required{% endif %}
+  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+/>
+{% endmacro %}
+
+{% macro textarea(name, label, value="", placeholder="", readonly=False, rows=4, required=False) %}
+<label>{{ label }}</label>
+<textarea 
+  name="{{ name }}" 
+  {% if readonly %}readonly{% endif %}
+  {% if required %}required{% endif %}
+  {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
+  style="min-height: {{ rows * 30 }}px"
+>{{ value }}</textarea>
+{% endmacro %}
+
+{% macro checkbox(name, label, checked=False, disabled=False) %}
+<label>
+  <input 
+    type="checkbox" 
+    name="{{ name }}" 
+    {% if checked %}checked{% endif %}
+    {% if disabled %}disabled{% endif %}
+  />
+  {{ label }}
+</label>
+{% endmacro %}
+
+{% macro select(name, label, options, selected="", required=False, id=None) %}
+<label>{{ label }}</label>
+<select name="{{ name }}" {% if id %}id="{{ id }}"{% endif %} {% if required %}required{% endif %}>
+  {% for opt in options %}
+  {% if opt is string %}
+  <option value="{{ opt }}" {% if opt == selected %}selected{% endif %}>{{ opt }}</option>
+  {% else %}
+  <option value="{{ opt.value }}" {% if opt.value == selected %}selected{% endif %}>{{ opt.label }}</option>
+  {% endif %}
+  {% endfor %}
+</select>
+{% endmacro %}

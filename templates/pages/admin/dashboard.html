@@ -1,0 +1,130 @@
+{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
+block page_content %} {{ header('Admin Dashboard', 'Complete oversight of
+employees and ticket management', 'dashboard') }}
+
+<!-- Admin dashboard statistics -->
+<div class="dashboard-grid">
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-primary">
+      <span class="material-symbols-outlined">group</span>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.total_employees }}</div>
+      <div class="stat-label">Total Employees</div>
+      <div class="stat-trend stat-trend-primary">
+        <span class="material-symbols-outlined stat-trend-icon">badge</span>
+        <span>Active</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-warning">
+      <span class="material-symbols-outlined">pending</span>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.pending_tickets }}</div>
+      <div class="stat-label">Pending Review</div>
+      <div class="stat-trend stat-trend-warning">
+        <span class="material-symbols-outlined stat-trend-icon">schedule</span>
+        <span>Awaiting</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-success">
+      <span class="material-symbols-outlined">check_circle</span>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.approved_tickets }}</div>
+      <div class="stat-label">Resolved</div>
+      <div class="stat-trend positive">
+        <span class="material-symbols-outlined stat-trend-icon">done_all</span>
+        <span>Approved</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon stat-icon-danger">
+      <span class="material-symbols-outlined">cancel</span>
+    </div>
+    <div class="stat-content">
+      <div class="stat-value">{{ stats.rejected_tickets }}</div>
+      <div class="stat-label">Rejected</div>
+      <div class="stat-trend stat-trend-muted">
+        <span class="material-symbols-outlined stat-trend-icon">block</span>
+        <span>Reviewed</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="dashboard-grid-2">
+  <a href="{{ url_for('admin_employee_details') }}" class="action-card">
+    <div class="action-icon action-icon-primary">
+      <span class="material-symbols-outlined">group</span>
+    </div>
+    <div class="action-content">
+      <div class="action-title">Employee Directory</div>
+      <div class="action-description">
+        View complete employee records and manage accounts
+      </div>
+    </div>
+    <span class="material-symbols-outlined action-arrow">arrow_forward</span>
+  </a>
+
+  <a href="{{ url_for('admin_tickets') }}" class="action-card">
+    <div class="action-icon action-icon-success">
+      <span class="material-symbols-outlined">confirmation_number</span>
+    </div>
+    <div class="action-content">
+      <div class="action-title">Ticket Management</div>
+      <div class="action-description">
+        Review and process all employee ticket requests
+      </div>
+    </div>
+    <span class="material-symbols-outlined action-arrow">arrow_forward</span>
+  </a>
+</div>
+
+<div class="card">
+  <h3>
+    <span class="material-symbols-outlined">bolt</span>
+    Quick Actions
+  </h3>
+  <div class="quick-actions-container">
+    <a href="{{ url_for('admin_employee_details') }}" class="quick-action-link">
+      <div class="quick-action-icon quick-action-icon-primary">
+        <span class="material-symbols-outlined">person_search</span>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">View All Employees</div>
+        <div class="quick-action-description">
+          Access complete employee directory and details
+        </div>
+      </div>
+      <span class="material-symbols-outlined quick-action-arrow"
+        >chevron_right</span
+      >
+    </a>
+
+    <a href="{{ url_for('admin_tickets') }}" class="quick-action-link">
+      <div class="quick-action-icon quick-action-icon-success">
+        <span class="material-symbols-outlined">fact_check</span>
+      </div>
+      <div class="quick-action-content">
+        <div class="quick-action-title">Review Pending Tickets</div>
+        <div class="quick-action-description">
+          Approve or reject employee requests and tickets
+        </div>
+      </div>
+      <span class="material-symbols-outlined quick-action-arrow"
+        >chevron_right</span
+      >
+    </a>
+  </div>
+</div>
+
+{% endblock %}

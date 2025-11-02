@@ -1,0 +1,49 @@
+{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
+from 'ui/card.html' import empty %} {% block page_content %} {{ header('Employee
+Management', 'View and manage all employee information', 'group') }} {% if
+employees %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Employee Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Laptop</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for emp in employees %}
+      <tr>
+        <td><strong>{{ emp.username }}</strong></td>
+        <td>{{ emp.email or '—' }}</td>
+        <td>{{ emp.phone or '—' }}</td>
+        <td class="employee-laptop-cell">{{ emp.laptop or '—' }}</td>
+        <td>
+          {% if emp.details_filled %}
+          <span class="status-badge status-approved">Complete</span>
+          {% else %}
+          <span class="status-badge status-pending">Incomplete</span>
+          {% endif %}
+        </td>
+        <td>
+          <a
+            href="{{ url_for('admin_employees') }}?employee={{ emp.id }}"
+            class="btn btn-secondary employee-edit-btn"
+          >
+            Edit
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  {{ empty('group', 'No employees found', 'No employee records available') }}
+</div>
+{% endif %} {% endblock %}

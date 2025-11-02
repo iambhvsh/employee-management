@@ -1,0 +1,81 @@
+{% from 'ui/card.html' import status, empty %} {% macro list(tickets,
+show_employee=False, show_actions=False) %} {% if tickets %}
+<div class="table-wrapper">
+  <table class="tickets-table">
+    <thead>
+      <tr>
+        <th class="th-id">ID</th>
+        {% if show_employee %}
+        <th class="th-employee">Employee</th>
+        {% endif %}
+        <th class="th-item">Item</th>
+        <th>Reason</th>
+        <th class="th-status">Status</th>
+        <th class="th-date">Date</th>
+        {% if show_actions %}
+        <th class="th-action">Action</th>
+        {% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tickets %}
+      <tr>
+        <td>
+          <strong class="ticket-id-strong">#{{ t.id }}</strong>
+        </td>
+        {% if show_employee %}
+        <td>{{ t.employee.username if t.employee else '—' }}</td>
+        {% endif %}
+        <td>{{ t.item }}</td>
+        <td class="ticket-reason" title="{{ t.reason }}">{{ t.reason }}</td>
+        <td>{{ status(t.status) }}</td>
+        <td class="ticket-date">
+          {{ t.created_at.strftime('%b %d, %Y') if t.created_at else 'N/A' }}
+        </td>
+        {% if show_actions %}
+        <td>
+          {% if t.status == 'Pending' %}
+          <div class="ticket-actions">
+            <form
+              method="post"
+              action="{{ url_for('admin_approve', ticket_id=t.id) }}"
+              class="form-inline-no-margin"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <button type="submit" class="btn-success btn-sm">
+                <span class="material-symbols-outlined btn-icon-sm">check</span>
+                Approve
+              </button>
+            </form>
+            <form
+              method="post"
+              action="{{ url_for('admin_reject', ticket_id=t.id) }}"
+              class="form-inline-no-margin"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <button type="submit" class="btn-error btn-sm">
+                <span class="material-symbols-outlined btn-icon-sm">close</span>
+                Reject
+              </button>
+            </form>
+          </div>
+          {% else %}
+          <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %} {{ empty('inbox', 'No tickets yet', 'Tickets will appear here once
+created') }} {% endif %} {% endmacro %}
