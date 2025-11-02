@@ -143,6 +143,106 @@
   --surface: var(--gray-1);
 }
 
+/* Dark Mode Variables */
+[data-theme="dark"] {
+  /* Color Palette - Dark Mode */
+  --default-background: #0a0a0a;
+  --default-foreground: #ededed;
+
+  /* Grayscale - Inverted */
+  --gray-1: #1a1a1a;
+  --gray-2: #232323;
+  --gray-3: #2a2a2a;
+  --gray-4: #323232;
+  --gray-5: #4a4a4a;
+  --gray-6: #6a6a6a;
+  --gray-7: #9a9a9a;
+  --gray-8: #c0c0c0;
+  --gray-9: #dddddd;
+  --gray-10: #ededed;
+
+  /* Transparency System - Dark */
+  --gray-a1: rgba(255, 255, 255, 0.02);
+  --gray-a2: rgba(255, 255, 255, 0.04);
+  --gray-a3: rgba(255, 255, 255, 0.06);
+  --gray-a4: rgba(255, 255, 255, 0.08);
+  --gray-a5: rgba(255, 255, 255, 0.12);
+  --gray-a6: rgba(255, 255, 255, 0.16);
+  --gray-a7: rgba(255, 255, 255, 0.24);
+  --gray-a8: rgba(255, 255, 255, 0.36);
+  --gray-a9: rgba(255, 255, 255, 0.48);
+  --gray-a10: rgba(255, 255, 255, 0.64);
+  --gray-a11: rgba(255, 255, 255, 0.8);
+  --gray-a12: rgba(255, 255, 255, 0.92);
+
+  /* Semantic Colors - Adjusted for dark mode */
+  --blue: #3291ff;
+  --blue-light: #5aa7ff;
+  --blue-dark: #0070f3;
+
+  --accent: #3291ff;
+  --accent-hover: #5aa7ff;
+  --accent-active: #7ab8ff;
+
+  --red: #ff4444;
+  --red-light: #ff6666;
+  --red-dark: #ff1a1a;
+  --red-a2: rgba(255, 68, 68, 0.08);
+  --red-a3: rgba(255, 68, 68, 0.12);
+  --red-a6: rgba(255, 68, 68, 0.25);
+  --red-a7: rgba(255, 68, 68, 0.35);
+  --red-11: #ff6666;
+
+  --amber: #ffc107;
+  --amber-a2: rgba(255, 193, 7, 0.08);
+  --amber-a3: rgba(255, 193, 7, 0.12);
+  --amber-a6: rgba(255, 193, 7, 0.25);
+  --amber-a7: rgba(255, 193, 7, 0.35);
+  --amber-11: #ffca28;
+
+  --green: #00d68f;
+  --green-light: #00f5a0;
+  --green-dark: #00a86b;
+  --green-a2: rgba(0, 214, 143, 0.08);
+  --green-a3: rgba(0, 214, 143, 0.12);
+  --green-a6: rgba(0, 214, 143, 0.25);
+  --green-a7: rgba(0, 214, 143, 0.35);
+  --green-11: #00f5a0;
+
+  /* Accents - Dark Mode */
+  --accents-1: var(--gray-1);
+  --accents-2: var(--gray-2);
+  --accents-3: var(--gray-3);
+  --accents-4: var(--gray-5);
+  --accents-5: var(--gray-6);
+  --accents-6: var(--gray-7);
+  --accents-7: var(--gray-8);
+  --accents-8: var(--gray-9);
+
+  /* Elevation - Dark Mode */
+  --shadow-border: 0 0 0 1px var(--gray-a4);
+  --shadow-sm: var(--shadow-border), 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-md: var(--shadow-border), 0 4px 8px rgba(0, 0, 0, 0.5);
+  --shadow-lg: var(--shadow-border), 0 8px 16px rgba(0, 0, 0, 0.6);
+
+  /* Legacy aliases - Dark Mode */
+  --background: var(--default-background);
+  --foreground: var(--default-foreground);
+  --primary: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --primary-light: rgba(50, 145, 255, 0.15);
+  --success: var(--green);
+  --success-hover: var(--green-light);
+  --success-light: rgba(0, 214, 143, 0.15);
+  --warning: var(--amber);
+  --danger: var(--red);
+  --danger-hover: var(--red-light);
+  --muted-foreground: var(--gray-6);
+  --border: var(--gray-a6);
+  --gray-11: var(--gray-9);
+  --surface: var(--gray-2);
+}
+
 /* Material Icons Configuration */
 
 .material-symbols-outlined {
@@ -3529,5 +3629,56 @@ input.valid {
 
   .action-buttons {
     gap: 6px;
+  }
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  position: fixed;
+  bottom: var(--space-6);
+  right: var(--space-6);
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-slow);
+  z-index: 1000;
+  color: var(--foreground);
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-lg), 0 0 0 4px var(--primary-light);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle .material-symbols-outlined {
+  font-size: 24px;
+  transition: transform var(--transition-slow);
+}
+
+.theme-toggle:hover .material-symbols-outlined {
+  transform: rotate(20deg);
+}
+
+@media (max-width: 768px) {
+  .theme-toggle {
+    width: 48px;
+    height: 48px;
+    bottom: var(--space-4);
+    right: var(--space-4);
+  }
+
+  .theme-toggle .material-symbols-outlined {
+    font-size: 20px;
   }
 }

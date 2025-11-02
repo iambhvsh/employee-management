@@ -8,8 +8,32 @@ A role-based employee management system built with Flask that provides separate 
 - **User Authentication**: Secure login system with password hashing
 - **Employee Management**: Admin can create, view, and manage employee accounts
 - **Ticket System**: Employees can raise tickets, admins can approve/reject them
+- **Dark/Light Mode**: Theme switching with persistent user preference
 - **CSRF Protection**: Built-in security against cross-site request forgery
-- **Responsive UI**: Clean and modern interface
+- **Responsive UI**: Clean and modern interface that works on all devices
+
+## Quick Start for Server Deployment
+
+**To deploy on your company server with IP:PORT access:**
+
+1. Edit `flask_employee_portal_app.py` line 984:
+   ```python
+   app.run(host="0.0.0.0", port=YOUR_PORT, debug=False)
+   ```
+
+2. Run the application:
+   ```bash
+   python flask_employee_portal_app.py
+   ```
+
+3. Access via browser:
+   ```
+   http://YOUR_SERVER_IP:YOUR_PORT
+   ```
+
+**Example**: If your server IP is `192.168.1.100` and you set port to `8080`, access via `http://192.168.1.100:8080`
+
+See [Server Deployment](#server-deployment-company-bare-metal--production-server) section for detailed instructions.
 
 ## Tech Stack
 
@@ -133,7 +157,7 @@ python seed_tickets.py
 
 ## Running the Application
 
-### Development Mode
+### Development Mode (Local Machine)
 
 Make sure your virtual environment is activated, then run:
 
@@ -141,17 +165,152 @@ Make sure your virtual environment is activated, then run:
 python flask_employee_portal_app.py
 ```
 
-The application will start on `http://127.0.0.1:5000/`
+The application will start on `http://127.0.0.1:5004/`
 
 **Note**: Keep the virtual environment activated while running the application.
 
-### Production Mode
+### Server Deployment (Company Bare Metal / Production Server)
 
-For production deployment, use a WSGI server like Gunicorn:
+When deploying on your company's bare metal server with a specific IP and port:
+
+#### Step 1: Configure IP and Port
+
+Open `flask_employee_portal_app.py` and find the last line (line 984):
+
+```python
+if __name__ == "__main__":
+    with app.app_context():
+        bootstrap()
+    app.run(host="0.0.0.0", port=5004, debug=True)
+```
+
+**Configuration Options:**
+
+- **`host="0.0.0.0"`**: This allows the server to accept connections from any IP address. Keep this as is for server deployment.
+- **`port=5004`**: Change this to your desired port number (e.g., 8080, 8000, 5000, etc.)
+- **`debug=True`**: Change to `debug=False` for production deployment
+
+**Example Configuration:**
+
+For accessing via `http://192.168.1.100:8080`:
+```python
+app.run(host="0.0.0.0", port=8080, debug=False)
+```
+
+For accessing via `http://10.0.0.50:5000`:
+```python
+app.run(host="0.0.0.0", port=5000, debug=False)
+```
+
+#### Step 2: Run on Server
 
 ```bash
+# Activate virtual environment
+source venv/bin/activate  # Linux/Mac
+# OR
+venv\Scripts\activate  # Windows
+
+# Run the application
+python flask_employee_portal_app.py
+```
+
+#### Step 3: Access the Application
+
+Open browser and navigate to:
+```
+http://YOUR_SERVER_IP:YOUR_PORT
+```
+
+Examples:
+- `http://192.168.1.100:8080`
+- `http://10.0.0.50:5004`
+- `http://172.16.0.10:5000`
+
+#### Important Notes for Server Deployment:
+
+1. **Firewall Configuration**: Ensure the port is open in your server's firewall
+   ```bash
+   # Ubuntu/Debian
+   sudo ufw allow 8080/tcp
+   
+   # CentOS/RHEL
+   sudo firewall-cmd --permanent --add-port=8080/tcp
+   sudo firewall-cmd --reload
+   ```
+
+2. **Security Settings**: For production, update in `flask_employee_portal_app.py`:
+   ```python
+   # Change debug to False (around line 984)
+   app.run(host="0.0.0.0", port=8080, debug=False)
+   
+   # Ensure secure cookies (around line 38-39)
+   app.config['SESSION_COOKIE_SECURE'] = True  # Only if using HTTPS
+   ```
+
+3. **Run as Background Service**: To keep it running after logout:
+   ```bash
+   # Using nohup
+   nohup python flask_employee_portal_app.py > app.log 2>&1 &
+   
+   # Using screen
+   screen -S employee-portal
+   python flask_employee_portal_app.py
+   # Press Ctrl+A then D to detach
+   ```
+
+### Production Mode with Gunicorn (Recommended for Production)
+
+For better performance and stability on production servers:
+
+```bash
+# Install Gunicorn
 pip install gunicorn
-gunicorn -w 4 -b 0.0.0.0:8000 flask_employee_portal_app:app
+
+# Run with Gunicorn
+gunicorn -w 4 -b 0.0.0.0:8080 flask_employee_portal_app:app
+
+# With more options
+gunicorn -w 4 -b 0.0.0.0:8080 --access-logfile access.log --error-logfile error.log flask_employee_portal_app:app
+```
+
+**Gunicorn Configuration:**
+- `-w 4`: Number of worker processes (use 2-4 × number of CPU cores)
+- `-b 0.0.0.0:8080`: Bind to IP and port
+- `--access-logfile`: Log HTTP requests
+- `--error-logfile`: Log errors
+
+**Access via**: `http://YOUR_SERVER_IP:8080`
+
+### Setting Up as a Systemd Service (Linux Servers)
+
+Create a service file for automatic startup:
+
+```bash
+sudo nano /etc/systemd/system/employee-portal.service
+```
+
+Add the following configuration:
+```ini
+[Unit]
+Description=Employee Portal Flask Application
+After=network.target
+
+[Service]
+User=your_username
+WorkingDirectory=/path/to/employee-management
+Environment="PATH=/path/to/employee-management/venv/bin"
+ExecStart=/path/to/employee-management/venv/bin/python flask_employee_portal_app.py
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start the service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable employee-portal
+sudo systemctl start employee-portal
+sudo systemctl status employee-portal
 ```
 
 ## Default Credentials
@@ -286,3 +445,88 @@ For issues, questions, or contributions, please open an issue on GitHub.
 ---
 
 **Note**: This application is designed for educational and internal use. Ensure proper security measures are in place before deploying to production.
+
+## 🎯 Server Configuration - Visual Guide
+
+### Where to Change IP and Port Configuration
+
+In `flask_employee_portal_app.py`, scroll to the **bottom of the file** (line 984):
+
+```python
+# CONFIGURATION LOCATION - Line 984
+# ====================================
+
+if __name__ == "__main__":
+    with app.app_context():
+        bootstrap()
+    
+    # 👇 CHANGE THESE VALUES FOR YOUR SERVER 👇
+    app.run(
+        host="0.0.0.0",    # Keep as 0.0.0.0 to accept external connections
+        port=5004,         # 🔧 CHANGE THIS to your desired port (e.g., 8080)
+        debug=True         # 🔧 CHANGE THIS to False for production
+    )
+```
+
+### Configuration Examples
+
+#### Example 1: Port 8080 (Production)
+```python
+app.run(host="0.0.0.0", port=8080, debug=False)
+```
+Access: `http://192.168.1.100:8080` (replace with your server IP)
+
+#### Example 2: Port 5000 (Production)
+```python
+app.run(host="0.0.0.0", port=5000, debug=False)
+```
+Access: `http://10.0.0.50:5000` (replace with your server IP)
+
+#### Example 3: Port 3000 (Production)
+```python
+app.run(host="0.0.0.0", port=3000, debug=False)
+```
+Access: `http://172.16.0.10:3000` (replace with your server IP)
+
+### Common Port Numbers
+
+| Port | Usage | Example Access URL |
+|------|-------|-------------------|
+| 5000 | Flask default | `http://YOUR_IP:5000` |
+| 5004 | Current default | `http://YOUR_IP:5004` |
+| 8000 | Common alternative | `http://YOUR_IP:8000` |
+| 8080 | HTTP alternative | `http://YOUR_IP:8080` |
+| 3000 | Development servers | `http://YOUR_IP:3000` |
+
+### Verification Steps
+
+After starting the application, you should see:
+```
+ * Running on http://0.0.0.0:YOUR_PORT
+ * Running on http://127.0.0.1:YOUR_PORT
+ * Running on http://YOUR_SERVER_IP:YOUR_PORT
+```
+
+### Troubleshooting
+
+**Problem**: Cannot access from other machines
+- **Solution**: Ensure `host="0.0.0.0"` (not `127.0.0.1`)
+- **Solution**: Check firewall allows the port
+
+**Problem**: Port already in use
+- **Solution**: Change to a different port number
+- **Solution**: Kill the process using that port:
+  ```bash
+  # Linux
+  sudo lsof -ti:8080 | xargs kill -9
+  
+  # Windows
+  netstat -ano | findstr :8080
+  taskkill /PID <PID_NUMBER> /F
+  ```
+
+**Problem**: Connection refused
+- **Solution**: Ensure application is running
+- **Solution**: Check server IP address is correct
+- **Solution**: Verify port matches configuration
+
