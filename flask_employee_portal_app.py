@@ -961,15 +961,19 @@ def bootstrap() -> None:
         admin = User(username="Tajuddin.S", is_admin=True)
         admin.set_password("Admin@123")
         db.session.add(admin)
-        print("Created admin: Tajuddin.S / Admin@123")
+        print("Created default admin user")
 
     employees = ["MohanTeja", "Hari", "Aparna", "Ramu", "Sai Prasanth"]
+    employees_created = 0
     for e in employees:
         if not User.query.filter_by(username=e).first():
             emp = User(username=e, is_admin=False)
             emp.set_password("Ckompare")
             db.session.add(emp)
-            print(f"Added employee: {e} / Ckompare")
+            employees_created += 1
+
+    if employees_created > 0:
+        print(f"Added {employees_created} employee(s)")
 
     db.session.commit()
 
