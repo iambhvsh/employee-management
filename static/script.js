@@ -1,5 +1,4 @@
 // Employee Portal - Client-side interactions
-// Initialize all interactive components on page load
 document.addEventListener("DOMContentLoaded", () => {
   initSidebarToggle();
   initDropdown();
@@ -8,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
   autoHideFlashMessages();
 });
 
-// Mobile-responsive sidebar with overlay
 // Sidebar navigation toggle functionality with overlay
 function initSidebarToggle() {
   const menuToggle = document.getElementById("menuToggle");
@@ -33,10 +31,10 @@ function initSidebarToggle() {
 
   menuToggle.addEventListener("click", toggleSidebar);
 
-
+  // Close sidebar when clicking overlay
   overlay.addEventListener("click", closeSidebar);
 
-
+  // Close sidebar on Escape key press
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && sidebar.classList.contains("active")) {
       closeSidebar();
@@ -53,7 +51,6 @@ function initSidebarToggle() {
   });
 }
 
-// Login page: username dropdown with keyboard navigation
 // Enhanced dropdown with keyboard navigation support
 function initDropdown() {
   const username = document.getElementById("username");
@@ -62,7 +59,7 @@ function initDropdown() {
 
   if (!username || !list) return;
 
-
+  // Toggle dropdown on click
   username.addEventListener("click", (e) => {
     e.stopPropagation();
     const isVisible = list.style.display === "block";
@@ -70,7 +67,7 @@ function initDropdown() {
     username.setAttribute("aria-expanded", !isVisible);
   });
 
-
+  // Close dropdown when clicking outside
   document.addEventListener("click", (e) => {
     if (!username.contains(e.target) && !list.contains(e.target)) {
       list.style.display = "none";
@@ -78,7 +75,7 @@ function initDropdown() {
     }
   });
 
-
+  // Handle option selection and keyboard navigation
   const options = document.querySelectorAll(".option");
   options.forEach((opt, index) => {
     opt.addEventListener("click", () => {
@@ -89,7 +86,7 @@ function initDropdown() {
       username.setAttribute("aria-expanded", "false");
     });
 
-
+    // Accessibility attributes
     opt.setAttribute("role", "option");
     opt.setAttribute("tabindex", "0");
 
@@ -108,7 +105,6 @@ function initDropdown() {
   });
 }
 
-// Client-side form validation for required fields
 // Real-time form validation with accessibility support
 function initFormValidation() {
   const forms = document.querySelectorAll("form");
@@ -180,7 +176,6 @@ function isValidPhone(phone) {
   return /^[\d\s\-\+\(\)]+$/.test(phone) && phone.replace(/\D/g, "").length >= 10;
 }
 
-// Dynamically convert text status to styled badges
 // Convert plain status text to styled badge components
 function initStatusBadges() {
   const statusCells = document.querySelectorAll("td");
@@ -198,7 +193,6 @@ function initStatusBadges() {
   });
 }
 
-// Auto-dismiss flash messages after 5s
 // Auto-dismiss flash notifications after 5 seconds
 function autoHideFlashMessages() {
   const flashMessages = document.querySelectorAll(".flash");

@@ -1,12 +1,11 @@
 """Seed sample tickets for testing and development"""
 
 from flask_employee_portal_app import app, db, User, Ticket
-from datetime import datetime, timedelta
 
 with app.app_context():
-
+    # Get all employees from database
     employees = User.query.filter_by(is_admin=False).all()
-    
+
     if employees:
 
         tickets_data = [
@@ -35,7 +34,7 @@ with app.app_context():
                 'status': 'Rejected'
             },
         ]
-        
+
         for idx, ticket_data in enumerate(tickets_data):
             ticket = Ticket(
                 employee_id=ticket_data['employee'].id,
@@ -44,7 +43,7 @@ with app.app_context():
                 status=ticket_data['status']
             )
             db.session.add(ticket)
-        
+
         db.session.commit()
         print(f"✅ Created {len(tickets_data)} sample tickets successfully!")
     else:
