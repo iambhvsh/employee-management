@@ -1,11 +1,53 @@
 // Employee Portal - Client-side interactions
 document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
   initSidebarToggle();
   initDropdown();
   initFormValidation();
   initStatusBadges();
   autoHideFlashMessages();
 });
+
+// Theme Management
+function initTheme() {
+  const savedTheme = localStorage.getItem("theme") || "light";
+  setTheme(savedTheme);
+  createThemeToggle();
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+}
+
+function toggleTheme() {
+  const currentTheme = document.documentElement.getAttribute("data-theme") || "light";
+  const newTheme = currentTheme === "light" ? "dark" : "light";
+  setTheme(newTheme);
+}
+
+function createThemeToggle() {
+  const toggle = document.createElement("button");
+  toggle.className = "theme-toggle";
+  toggle.setAttribute("aria-label", "Toggle theme");
+  toggle.innerHTML = '<span class="material-symbols-outlined">dark_mode</span>';
+
+  toggle.addEventListener("click", () => {
+    toggleTheme();
+    const icon = toggle.querySelector(".material-symbols-outlined");
+    const currentTheme = document.documentElement.getAttribute("data-theme");
+    icon.textContent = currentTheme === "dark" ? "light_mode" : "dark_mode";
+  });
+
+  // Set initial icon
+  const currentTheme = document.documentElement.getAttribute("data-theme");
+  if (currentTheme === "dark") {
+    toggle.querySelector(".material-symbols-outlined").textContent = "light_mode";
+  }
+
+  document.body.appendChild(toggle);
+}
+
 
 // Sidebar navigation toggle functionality with overlay
 function initSidebarToggle() {
