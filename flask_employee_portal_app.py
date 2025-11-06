@@ -10,7 +10,7 @@ from flask_login import (
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timezone
-from typing import Dict, Optional, Union, List, Any, Tuple, Callable, TypeVar, cast
+from typing import Dict, Optional, Union, List, Any, Tuple, Callable, TypeVar, cast, TYPE_CHECKING
 from typing_extensions import ParamSpec
 from pydantic import BaseModel, Field, EmailStr, field_validator, ValidationError
 import os
@@ -54,7 +54,7 @@ app.config['REMEMBER_COOKIE_SECURE'] = False
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'  # type: ignore[assignment]
+login_manager.login_view = 'login'
 login_manager.session_protection = "strong"
 
 
@@ -221,8 +221,9 @@ def admin_required(f: Callable[P, T]) -> Callable[P, T]:
     """Custom decorator to restrict routes to admin users only"""
     @wraps(f)
     def decorated_function(*args: P.args, **kwargs: P.kwargs) -> T:
-        if not current_user.is_authenticated or not current_user.is_admin:  # type: ignore[attr-defined]
-            logger.warning(f"Unauthorized access attempt to admin route by user: {current_user.username if current_user.is_authenticated else 'anonymous'}")  # type: ignore[attr-defined]
+        if not current_user.is_authenticated or not getattr(current_user, 'is_admin', False):
+            username = getattr(current_user, 'username', 'anonymous') if current_user.is_authenticated else 'anonymous'
+            logger.warning(f"Unauthorized access attempt to admin route by user: {username}")
             abort(403)
         return f(*args, **kwargs)
     return cast(Callable[P, T], decorated_function)
@@ -244,35 +245,35 @@ SERVICE_REQUEST_TYPES = {
 
 
 # Database models
-class User(db.Model, UserMixin):  # type: ignore[name-defined]
+class User(db.Model, UserMixin):
     __tablename__ = 'user'
     __allow_unmapped__ = True
 
-    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
-    username: str = db.Column(db.String(80), unique=True, nullable=False)  # type: ignore[assignment]
-    password_hash: str = db.Column(db.String(200), nullable=False)  # type: ignore[assignment]
-    is_admin: bool = db.Column(db.Boolean, default=False)  # type: ignore[assignment]
+    id: Any = db.Column(db.Integer, primary_key=True)
+    username: Any = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash: Any = db.Column(db.String(200), nullable=False)
+    is_admin: Any = db.Column(db.Boolean, default=False)
     
     # Department field for organizing employees
-    department: Optional[str] = db.Column(db.String(100))  # type: ignore[assignment]
+    department: Any = db.Column(db.String(100))
 
-    phone: Optional[str] = db.Column(db.String(50))  # type: ignore[assignment]
-    email: Optional[str] = db.Column(db.String(120))  # type: ignore[assignment]
-    laptop: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
-    charger: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
-    keyboard: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
-    mouse: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
-    headset: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
+    phone: Any = db.Column(db.String(50))
+    email: Any = db.Column(db.String(120))
+    laptop: Any = db.Column(db.String(200))
+    charger: Any = db.Column(db.String(200))
+    keyboard: Any = db.Column(db.String(200))
+    mouse: Any = db.Column(db.String(200))
+    headset: Any = db.Column(db.String(200))
     
     # Additional asset fields for mobile devices and bags
-    more_device: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]  # Mobile devices for mobile developers
-    bags: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]  # Office-allotted bags
+    more_device: Any = db.Column(db.String(200))  # Mobile devices for mobile developers
+    bags: Any = db.Column(db.String(200))  # Office-allotted bags
 
     # Access permissions stored as JSON
-    access_json: str = db.Column(db.Text, default='{}')  # type: ignore[assignment]
+    access_json: Any = db.Column(db.Text, default='{}')
 
     # Flag indicating if employee has filled their details
-    details_filled: bool = db.Column(db.Boolean, default=False)  # type: ignore[assignment]
+    details_filled: Any = db.Column(db.Boolean, default=False)
 
     def set_password(self, pw: str) -> None:
         self.password_hash = generate_password_hash(pw)
@@ -292,57 +293,57 @@ class User(db.Model, UserMixin):  # type: ignore[name-defined]
         self.access_json = json.dumps(d or {})
 
 
-class Ticket(db.Model):  # type: ignore[name-defined]
+class Ticket(db.Model):
     __tablename__ = 'ticket'
     __allow_unmapped__ = True
 
-    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
-    employee_id: int = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)  # type: ignore[assignment]
-    item: str = db.Column(db.String(200), nullable=False)  # type: ignore[assignment]
-    reason: str = db.Column(db.Text, nullable=False)  # type: ignore[assignment]
-    status: str = db.Column(db.String(50), default='Pending')  # type: ignore[assignment]
-    created_at: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
-    updated_at: datetime = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())  # type: ignore[assignment]
+    id: Any = db.Column(db.Integer, primary_key=True)
+    employee_id: Any = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    item: Any = db.Column(db.String(200), nullable=False)
+    reason: Any = db.Column(db.Text, nullable=False)
+    status: Any = db.Column(db.String(50), default='Pending')
+    created_at: Any = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at: Any = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
-    employee = db.relationship('User', backref='tickets')  # type: ignore[assignment]
+    employee: Any = db.relationship('User', backref='tickets')
 
 
-class ServiceRequest(db.Model):  # type: ignore[name-defined]
+class ServiceRequest(db.Model):
     """Model for service requests (DevOps and Developer requests)"""
     __tablename__ = 'service_request'
     __allow_unmapped__ = True
 
-    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
-    employee_id: int = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)  # type: ignore[assignment]
-    category: str = db.Column(db.String(50), nullable=False)  # type: ignore[assignment]  # 'DevOps' or 'Developer'
-    request_type: str = db.Column(db.String(100), nullable=False)  # type: ignore[assignment]  # e.g., 'Add Port', 'GitHub Access Request'
-    details: str = db.Column(db.Text)  # type: ignore[assignment]  # Optional additional details
-    status: str = db.Column(db.String(50), default='Pending')  # type: ignore[assignment]  # Pending, Approved, Rejected, Revoked
-    created_at: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
-    updated_at: datetime = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())  # type: ignore[assignment]
+    id: Any = db.Column(db.Integer, primary_key=True)
+    employee_id: Any = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
+    category: Any = db.Column(db.String(50), nullable=False)  # 'DevOps' or 'Developer'
+    request_type: Any = db.Column(db.String(100), nullable=False)  # e.g., 'Add Port', 'GitHub Access Request'
+    details: Any = db.Column(db.Text)  # Optional additional details
+    status: Any = db.Column(db.String(50), default='Pending')  # Pending, Approved, Rejected, Revoked
+    created_at: Any = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at: Any = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
-    employee = db.relationship('User', backref='service_requests')  # type: ignore[assignment]
+    employee: Any = db.relationship('User', backref='service_requests')
 
 
-class GitHubRepoAccess(db.Model):  # type: ignore[name-defined]
+class GitHubRepoAccess(db.Model):
     """Model for tracking GitHub repository access for employees"""
     __tablename__ = 'github_repo_access'
     __allow_unmapped__ = True
 
-    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
-    employee_id: int = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)  # type: ignore[assignment]
-    repo_name: str = db.Column(db.String(200), nullable=False)  # type: ignore[assignment]
-    access_granted_date: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
-    access_revoked_date: Optional[datetime] = db.Column(db.DateTime, nullable=True)  # type: ignore[assignment]
-    is_active: bool = db.Column(db.Boolean, default=True)  # type: ignore[assignment]
-    created_at: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
-    updated_at: datetime = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())  # type: ignore[assignment]
+    id: Any = db.Column(db.Integer, primary_key=True)
+    employee_id: Any = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    repo_name: Any = db.Column(db.String(200), nullable=False)
+    access_granted_date: Any = db.Column(db.DateTime, server_default=db.func.now())
+    access_revoked_date: Any = db.Column(db.DateTime, nullable=True)
+    is_active: Any = db.Column(db.Boolean, default=True)
+    created_at: Any = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at: Any = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
 
-    employee = db.relationship('User', backref='github_accesses')  # type: ignore[assignment]
+    employee: Any = db.relationship('User', backref='github_accesses')
 
 
 # Flask-Login user loader callback
-@login_manager.user_loader  # type: ignore[misc]
+@login_manager.user_loader
 def load_user(user_id: str) -> Optional[User]:
     return db.session.get(User, int(user_id))
 
@@ -358,20 +359,20 @@ def index():
 
 # Authentication routes
 @app.route("/login", methods=["GET", "POST"])
-def login():
+def login() -> Union[Response, str]:
     """Handle user authentication with role-based redirection"""
-    admins: List[str] = [u.username for u in User.query.filter_by(is_admin=True).all()]  # type: ignore[attr-defined]
-    employees: List[str] = [u.username for u in User.query.filter_by(is_admin=False).all()]  # type: ignore[attr-defined]
+    admins: List[str] = [u.username for u in User.query.filter_by(is_admin=True).all()]
+    employees: List[str] = [u.username for u in User.query.filter_by(is_admin=False).all()]
     
     # Get unique departments for employees using select
     from sqlalchemy import select, distinct
-    stmt = select(distinct(User.department)).where(User.is_admin == False, User.department.isnot(None))  # type: ignore[arg-type]
+    stmt = select(distinct(User.department)).where(User.is_admin == False, User.department.isnot(None))
     departments_query = db.session.execute(stmt).scalars().all()
     departments: List[str] = sorted([d for d in departments_query if d])
     
     # Create department mapping for employees
     employee_departments: Dict[str, List[str]] = {}
-    for emp in User.query.filter_by(is_admin=False).all():  # type: ignore[attr-defined]
+    for emp in User.query.filter_by(is_admin=False).all():
         if emp.department:
             if emp.department not in employee_departments:
                 employee_departments[emp.department] = []
@@ -385,35 +386,35 @@ def login():
                 password=request.form.get("password", "")
             )
 
-            user_query = User.query.filter_by(username=credentials.username).first()  # type: ignore[attr-defined]
+            user_query = User.query.filter_by(username=credentials.username).first()
             user: Optional[User] = cast(Optional[User], user_query)
             if not user:
                 logger.warning(f"Failed login attempt for non-existent user: {credentials.username}")
                 flash("Invalid username or password", "error")
-                return cast(Response, redirect(url_for("login")))
+                return redirect(url_for("login"))
 
             if not user.check_password(credentials.password):
                 logger.warning(f"Failed login attempt for user: {credentials.username}")
                 flash("Invalid username or password", "error")
-                return cast(Response, redirect(url_for("login")))
+                return redirect(url_for("login"))
 
-            login_user(user)  # type: ignore[arg-type]
+            login_user(user)
             logger.info(f"Successful login for user: {user.username}")
             flash(f"Welcome, {user.username}!", "success")
 
             if user.is_admin:
-                return cast(Response, redirect(url_for("admin_dashboard")))
+                return redirect(url_for("admin_dashboard"))
             else:
-                return cast(Response, redirect(url_for("employee_dashboard_redirect")))
+                return redirect(url_for("employee_dashboard_redirect"))
 
         except ValidationError as e:
             logger.error(f"Validation error during login: {e}")
             flash("Invalid username or password format", "error")
-            return cast(Response, redirect(url_for("login")))
+            return redirect(url_for("login"))
         except Exception as e:
             logger.error(f"Unexpected error during login: {e}")
             flash("An error occurred. Please try again.", "error")
-            return cast(Response, redirect(url_for("login")))
+            return redirect(url_for("login"))
 
     return render_template("login.html", 
                          admins=admins, 
