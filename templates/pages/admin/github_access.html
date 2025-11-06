@@ -1,0 +1,283 @@
+{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
+block page_content %} {{ header('GitHub Repository Access', 'Manage employee
+access to GitHub repositories') }}
+
+<!-- Grant Access Form -->
+<div class="card">
+  <h3
+    style="
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    "
+  >
+    <span class="material-symbols-outlined" style="color: var(--primary-color)"
+      >add_circle</span
+    >
+    Grant Repository Access
+  </h3>
+
+  <form
+    method="post"
+    action="{{ url_for('admin_grant_github_access') }}"
+    style="
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 1rem;
+      align-items: end;
+    "
+  >
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+    <div class="form-group" style="margin: 0">
+      <label for="employee_id">Employee</label>
+      <select id="employee_id" name="employee_id" required style="width: 100%">
+        <option value="">Select an employee</option>
+        {% for emp in employees %}
+        <option value="{{ emp.id }}">
+          {{ emp.username }}{% if emp.department %} - {{ emp.department }}{%
+          endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group" style="margin: 0">
+      <label for="repo_name">Repository Name</label>
+      <input
+        type="text"
+        id="repo_name"
+        name="repo_name"
+        required
+        placeholder="e.g., owner/repo-name"
+        style="width: 100%"
+      />
+    </div>
+
+    <button
+      type="submit"
+      class="btn-action btn-success"
+      style="padding: 0.65rem 1.25rem; white-space: nowrap"
+    >
+      <span class="material-symbols-outlined" style="font-size: 1.1rem"
+        >add</span
+      >
+      Grant Access
+    </button>
+  </form>
+</div>
+
+<!-- Access Records Table -->
+<div class="card">
+  <h3
+    style="
+      margin-top: 0;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    "
+  >
+    <span class="material-symbols-outlined" style="color: var(--primary-color)"
+      >list</span
+    >
+    Repository Access Records
+  </h3>
+
+  {% if access_records %}
+  <div style="overflow-x: auto">
+    <table>
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Repository</th>
+          <th>Access Granted</th>
+          <th>Access Revoked</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for access, user in access_records %}
+        <tr>
+          <td>
+            <div style="display: flex; align-items: center; gap: 0.5rem">
+              <span
+                class="material-symbols-outlined"
+                style="font-size: 1.25rem; color: var(--muted-foreground)"
+                >person</span
+              >
+              <strong>{{ user.username }}</strong>
+            </div>
+          </td>
+          <td>
+            {% if user.department %}
+            <span
+              style="
+                padding: 0.25rem 0.75rem;
+                background: var(--gray-a2);
+                border-radius: 12px;
+                font-size: 0.813rem;
+              "
+            >
+              {{ user.department }}
+            </span>
+            {% else %}
+            <span style="color: var(--muted-foreground); font-size: 0.813rem"
+              >Not set</span
+            >
+            {% endif %}
+          </td>
+          <td>
+            <code
+              style="
+                padding: 0.25rem 0.5rem;
+                background: var(--gray-a2);
+                border-radius: 4px;
+                font-family: 'Courier New', monospace;
+                font-size: 0.875rem;
+              "
+            >
+              {{ access.repo_name }}
+            </code>
+          </td>
+          <td style="font-size: 0.875rem">
+            {{ access.access_granted_date.strftime('%Y-%m-%d %H:%M') if
+            access.access_granted_date else 'N/A' }}
+          </td>
+          <td style="font-size: 0.875rem">
+            {% if access.access_revoked_date %} {{
+            access.access_revoked_date.strftime('%Y-%m-%d %H:%M') }} {% else %}
+            <span style="color: var(--muted-foreground)">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if access.is_active %}
+            <span class="status-badge status-badge-success">
+              <span
+                class="material-symbols-outlined"
+                style="font-size: 0.875rem"
+                >check_circle</span
+              >
+              Active
+            </span>
+            {% else %}
+            <span class="status-badge status-badge-danger">
+              <span
+                class="material-symbols-outlined"
+                style="font-size: 0.875rem"
+                >block</span
+              >
+              Revoked
+            </span>
+            {% endif %}
+          </td>
+          <td>
+            {% if access.is_active %}
+            <form
+              method="post"
+              action="{{ url_for('admin_revoke_github_access', access_id=access.id) }}"
+              style="display: inline; margin: 0"
+            >
+              <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+              />
+              <button
+                type="submit"
+                class="btn-action btn-danger"
+                title="Revoke Access"
+                onclick="return confirm('Are you sure you want to revoke {{ user.username }}\'s access to {{ access.repo_name }}?')"
+                style="
+                  padding: 0.35rem 0.75rem;
+                  font-size: 0.813rem;
+                  white-space: nowrap;
+                "
+              >
+                <span
+                  class="material-symbols-outlined"
+                  style="font-size: 0.95rem"
+                  >block</span
+                >
+                Revoke
+              </button>
+            </form>
+            {% else %}
+            <span style="color: var(--muted-foreground); font-size: 0.813rem"
+              >No actions</span
+            >
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="material-symbols-outlined empty-state-icon">source</span>
+    <p class="empty-state-text">No GitHub repository access records found</p>
+    <p class="empty-state-subtext">
+      Grant access to employees using the form above
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.813rem;
+    font-weight: 500;
+  }
+
+  .status-badge-success {
+    background: rgba(34, 197, 94, 0.1);
+    color: rgb(34, 197, 94);
+  }
+
+  .status-badge-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: rgb(239, 68, 68);
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-success {
+    background: rgb(34, 197, 94);
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: rgb(22, 163, 74);
+  }
+
+  .btn-danger {
+    background: rgb(239, 68, 68);
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: rgb(220, 38, 38);
+  }
+</style>
+{% endblock %}

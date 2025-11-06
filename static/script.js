@@ -45,7 +45,14 @@ function createThemeToggle() {
     toggle.querySelector(".material-symbols-outlined").textContent = "light_mode";
   }
 
-  document.body.appendChild(toggle);
+  // Append to header-actions instead of body
+  const headerActions = document.querySelector(".header-actions");
+  if (headerActions) {
+    headerActions.appendChild(toggle);
+  } else {
+    // Fallback to body if header-actions doesn't exist
+    document.body.appendChild(toggle);
+  }
 }
 
 

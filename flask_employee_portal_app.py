@@ -1,22 +1,27 @@
 """Flask Employee Portal - Role-based access system"""
 
 # Core imports for Flask web framework, authentication, validation, and security
-from flask import Flask, render_template, request, redirect, url_for, flash, Response, abort
+from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask.wrappers import Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
   LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 )
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.wrappers import Response as WerkzeugResponse
 from datetime import datetime, timezone
-from typing import Dict, Optional, Union, List, Any, Tuple
+from typing import Dict, Optional, Union, List, Any, Tuple, Callable, TypeVar, cast
+from typing_extensions import ParamSpec
 from pydantic import BaseModel, Field, EmailStr, field_validator, ValidationError
 import os
 import json
 import re
 import logging
 from functools import wraps
+
+# Type variables for decorator typing
+P = ParamSpec('P')
+T = TypeVar('T')
 
 # Configure application logging
 logging.basicConfig(
@@ -30,6 +35,10 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super_secret_key_change_in_production')
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Company configuration
+COMPANY_NAME = os.environ.get('COMPANY_NAME', 'Employee Portal')
+app.config['COMPANY_NAME'] = COMPANY_NAME
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
@@ -45,13 +54,13 @@ app.config['REMEMBER_COOKIE_SECURE'] = False
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'login'  # type: ignore[assignment]
 login_manager.session_protection = "strong"
 
 
 # Add security and cache control headers to all responses
 @app.after_request
-def add_header(response: Union[Response, WerkzeugResponse]) -> Union[Response, WerkzeugResponse]:
+def add_header(response: Response) -> Response:
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '-1'
@@ -94,6 +103,45 @@ class TicketCreate(BaseModel):
         return v
 
 
+class ServiceRequestCreate(BaseModel):
+    """Type-safe service request creation model"""
+    category: str = Field(..., min_length=1, max_length=50, description="Request category: DevOps or Developer")
+    request_type: str = Field(..., min_length=1, max_length=100, description="Type of request")
+    details: Optional[str] = Field(None, max_length=5000, description="Optional additional details")
+    employee_id: Optional[int] = Field(None, ge=1, description="Employee ID for admin-created requests")
+
+    @field_validator('category')
+    @classmethod
+    def validate_category(cls, v: str) -> str:
+        """Validate category is one of allowed values"""
+        v = v.strip()
+        if v not in ['DevOps', 'Developer']:
+            raise ValueError('Category must be either DevOps or Developer')
+        return v
+
+    @field_validator('request_type')
+    @classmethod
+    def validate_request_type(cls, v: str) -> str:
+        """Validate and sanitize request type"""
+        v = v.strip()
+        if not v:
+            raise ValueError('Request type cannot be empty')
+        # Remove any HTML tags for security
+        v = re.sub(r'<[^>]*>', '', v)
+        return v
+
+    @field_validator('details')
+    @classmethod
+    def validate_details(cls, v: Optional[str]) -> Optional[str]:
+        """Validate and sanitize details field"""
+        if v:
+            v = v.strip()
+            # Remove any HTML tags for security
+            v = re.sub(r'<[^>]*>', '', v)
+            return v if v else None
+        return v
+
+
 class UserDetailsUpdate(BaseModel):
     """Type-safe employee profile update model"""
     phone: Optional[str] = Field(None, max_length=50)
@@ -103,9 +151,13 @@ class UserDetailsUpdate(BaseModel):
     keyboard: Optional[str] = Field(None, max_length=200)
     mouse: Optional[str] = Field(None, max_length=200)
     headset: Optional[str] = Field(None, max_length=200)
+    more_device: Optional[str] = Field(None, max_length=200, description="Additional mobile devices")
+    bags: Optional[str] = Field(None, max_length=200, description="Office-allotted bags")
     vpn_access: bool = False
     email_access: bool = False
     biometric_access: bool = False
+    floor_level_1: bool = False
+    floor_level_2: bool = False
 
     @field_validator('phone')
     @classmethod
@@ -120,7 +172,7 @@ class UserDetailsUpdate(BaseModel):
             return cleaned
         return v
 
-    @field_validator('laptop', 'charger', 'keyboard', 'mouse', 'headset')
+    @field_validator('laptop', 'charger', 'keyboard', 'mouse', 'headset', 'more_device', 'bags')
     @classmethod
     def validate_assets(cls, v: Optional[str]) -> Optional[str]:
         """Validate and sanitize asset fields"""
@@ -165,15 +217,15 @@ def validate_ticket_status(status: str) -> bool:
 
 
 # Custom decorator to restrict routes to admin users only
-def admin_required(f):
+def admin_required(f: Callable[P, T]) -> Callable[P, T]:
     """Custom decorator to restrict routes to admin users only"""
     @wraps(f)
-    def decorated_function(*args: Any, **kwargs: Any):
-        if not current_user.is_authenticated or not current_user.is_admin:
-            logger.warning(f"Unauthorized access attempt to admin route by user: {current_user.username if current_user.is_authenticated else 'anonymous'}")
+    def decorated_function(*args: P.args, **kwargs: P.kwargs) -> T:
+        if not current_user.is_authenticated or not current_user.is_admin:  # type: ignore[attr-defined]
+            logger.warning(f"Unauthorized access attempt to admin route by user: {current_user.username if current_user.is_authenticated else 'anonymous'}")  # type: ignore[attr-defined]
             abort(403)
         return f(*args, **kwargs)
-    return decorated_function
+    return cast(Callable[P, T], decorated_function)
 
 
 # Predefined ticket categories for structured issue tracking
@@ -184,30 +236,43 @@ TICKET_GROUPS = {
     "OTHER": ["OTHER"]
 }
 
+# Service request categories and types
+SERVICE_REQUEST_TYPES = {
+    "DevOps": ["Add Port", "Add VPN", "Add Route", "Add Firewall"],
+    "Developer": ["GitHub Access Request"]
+}
+
 
 # Database models
-class User(db.Model, UserMixin):
+class User(db.Model, UserMixin):  # type: ignore[name-defined]
     __tablename__ = 'user'
     __allow_unmapped__ = True
 
-    id: int = db.Column(db.Integer, primary_key=True)
-    username: str = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash: str = db.Column(db.String(200), nullable=False)
-    is_admin: bool = db.Column(db.Boolean, default=False)
+    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
+    username: str = db.Column(db.String(80), unique=True, nullable=False)  # type: ignore[assignment]
+    password_hash: str = db.Column(db.String(200), nullable=False)  # type: ignore[assignment]
+    is_admin: bool = db.Column(db.Boolean, default=False)  # type: ignore[assignment]
+    
+    # Department field for organizing employees
+    department: Optional[str] = db.Column(db.String(100))  # type: ignore[assignment]
 
-    phone: Optional[str] = db.Column(db.String(50))
-    email: Optional[str] = db.Column(db.String(120))
-    laptop: Optional[str] = db.Column(db.String(200))
-    charger: Optional[str] = db.Column(db.String(200))
-    keyboard: Optional[str] = db.Column(db.String(200))
-    mouse: Optional[str] = db.Column(db.String(200))
-    headset: Optional[str] = db.Column(db.String(200))
+    phone: Optional[str] = db.Column(db.String(50))  # type: ignore[assignment]
+    email: Optional[str] = db.Column(db.String(120))  # type: ignore[assignment]
+    laptop: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
+    charger: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
+    keyboard: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
+    mouse: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
+    headset: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]
+    
+    # Additional asset fields for mobile devices and bags
+    more_device: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]  # Mobile devices for mobile developers
+    bags: Optional[str] = db.Column(db.String(200))  # type: ignore[assignment]  # Office-allotted bags
 
     # Access permissions stored as JSON
-    access_json: str = db.Column(db.Text, default='{}')
+    access_json: str = db.Column(db.Text, default='{}')  # type: ignore[assignment]
 
     # Flag indicating if employee has filled their details
-    details_filled: bool = db.Column(db.Boolean, default=False)
+    details_filled: bool = db.Column(db.Boolean, default=False)  # type: ignore[assignment]
 
     def set_password(self, pw: str) -> None:
         self.password_hash = generate_password_hash(pw)
@@ -227,23 +292,57 @@ class User(db.Model, UserMixin):
         self.access_json = json.dumps(d or {})
 
 
-class Ticket(db.Model):
+class Ticket(db.Model):  # type: ignore[name-defined]
     __tablename__ = 'ticket'
     __allow_unmapped__ = True
 
-    id: int = db.Column(db.Integer, primary_key=True)
-    employee_id: int = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)
-    item: str = db.Column(db.String(200), nullable=False)
-    reason: str = db.Column(db.Text, nullable=False)
-    status: str = db.Column(db.String(50), default='Pending')
-    created_at: datetime = db.Column(db.DateTime, server_default=db.func.now())
-    updated_at: datetime = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
+    employee_id: int = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)  # type: ignore[assignment]
+    item: str = db.Column(db.String(200), nullable=False)  # type: ignore[assignment]
+    reason: str = db.Column(db.Text, nullable=False)  # type: ignore[assignment]
+    status: str = db.Column(db.String(50), default='Pending')  # type: ignore[assignment]
+    created_at: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
+    updated_at: datetime = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())  # type: ignore[assignment]
 
-    employee = db.relationship('User', backref='tickets')
+    employee = db.relationship('User', backref='tickets')  # type: ignore[assignment]
+
+
+class ServiceRequest(db.Model):  # type: ignore[name-defined]
+    """Model for service requests (DevOps and Developer requests)"""
+    __tablename__ = 'service_request'
+    __allow_unmapped__ = True
+
+    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
+    employee_id: int = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='SET NULL'), nullable=True)  # type: ignore[assignment]
+    category: str = db.Column(db.String(50), nullable=False)  # type: ignore[assignment]  # 'DevOps' or 'Developer'
+    request_type: str = db.Column(db.String(100), nullable=False)  # type: ignore[assignment]  # e.g., 'Add Port', 'GitHub Access Request'
+    details: str = db.Column(db.Text)  # type: ignore[assignment]  # Optional additional details
+    status: str = db.Column(db.String(50), default='Pending')  # type: ignore[assignment]  # Pending, Approved, Rejected, Revoked
+    created_at: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
+    updated_at: datetime = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())  # type: ignore[assignment]
+
+    employee = db.relationship('User', backref='service_requests')  # type: ignore[assignment]
+
+
+class GitHubRepoAccess(db.Model):  # type: ignore[name-defined]
+    """Model for tracking GitHub repository access for employees"""
+    __tablename__ = 'github_repo_access'
+    __allow_unmapped__ = True
+
+    id: int = db.Column(db.Integer, primary_key=True)  # type: ignore[assignment]
+    employee_id: int = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)  # type: ignore[assignment]
+    repo_name: str = db.Column(db.String(200), nullable=False)  # type: ignore[assignment]
+    access_granted_date: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
+    access_revoked_date: Optional[datetime] = db.Column(db.DateTime, nullable=True)  # type: ignore[assignment]
+    is_active: bool = db.Column(db.Boolean, default=True)  # type: ignore[assignment]
+    created_at: datetime = db.Column(db.DateTime, server_default=db.func.now())  # type: ignore[assignment]
+    updated_at: datetime = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())  # type: ignore[assignment]
+
+    employee = db.relationship('User', backref='github_accesses')  # type: ignore[assignment]
 
 
 # Flask-Login user loader callback
-@login_manager.user_loader
+@login_manager.user_loader  # type: ignore[misc]
 def load_user(user_id: str) -> Optional[User]:
     return db.session.get(User, int(user_id))
 
@@ -261,8 +360,22 @@ def index():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     """Handle user authentication with role-based redirection"""
-    admins: List[str] = [u.username for u in User.query.filter_by(is_admin=True).all()]
-    employees: List[str] = [u.username for u in User.query.filter_by(is_admin=False).all()]
+    admins: List[str] = [u.username for u in User.query.filter_by(is_admin=True).all()]  # type: ignore[attr-defined]
+    employees: List[str] = [u.username for u in User.query.filter_by(is_admin=False).all()]  # type: ignore[attr-defined]
+    
+    # Get unique departments for employees using select
+    from sqlalchemy import select, distinct
+    stmt = select(distinct(User.department)).where(User.is_admin == False, User.department.isnot(None))  # type: ignore[arg-type]
+    departments_query = db.session.execute(stmt).scalars().all()
+    departments: List[str] = sorted([d for d in departments_query if d])
+    
+    # Create department mapping for employees
+    employee_departments: Dict[str, List[str]] = {}
+    for emp in User.query.filter_by(is_admin=False).all():  # type: ignore[attr-defined]
+        if emp.department:
+            if emp.department not in employee_departments:
+                employee_departments[emp.department] = []
+            employee_departments[emp.department].append(emp.username)
 
     if request.method == "POST":
         try:
@@ -272,36 +385,42 @@ def login():
                 password=request.form.get("password", "")
             )
 
-            user: Optional[User] = User.query.filter_by(username=credentials.username).first()
+            user_query = User.query.filter_by(username=credentials.username).first()  # type: ignore[attr-defined]
+            user: Optional[User] = cast(Optional[User], user_query)
             if not user:
                 logger.warning(f"Failed login attempt for non-existent user: {credentials.username}")
                 flash("Invalid username or password", "error")
-                return redirect(url_for("login"))
+                return cast(Response, redirect(url_for("login")))
 
             if not user.check_password(credentials.password):
                 logger.warning(f"Failed login attempt for user: {credentials.username}")
                 flash("Invalid username or password", "error")
-                return redirect(url_for("login"))
+                return cast(Response, redirect(url_for("login")))
 
-            login_user(user)
+            login_user(user)  # type: ignore[arg-type]
             logger.info(f"Successful login for user: {user.username}")
             flash(f"Welcome, {user.username}!", "success")
 
             if user.is_admin:
-                return redirect(url_for("admin_dashboard"))
+                return cast(Response, redirect(url_for("admin_dashboard")))
             else:
-                return redirect(url_for("employee_dashboard_redirect"))
+                return cast(Response, redirect(url_for("employee_dashboard_redirect")))
 
         except ValidationError as e:
             logger.error(f"Validation error during login: {e}")
             flash("Invalid username or password format", "error")
-            return redirect(url_for("login"))
+            return cast(Response, redirect(url_for("login")))
         except Exception as e:
             logger.error(f"Unexpected error during login: {e}")
             flash("An error occurred. Please try again.", "error")
-            return redirect(url_for("login"))
+            return cast(Response, redirect(url_for("login")))
 
-    return render_template("login.html", admins=admins, employees=employees)
+    return render_template("login.html", 
+                         admins=admins, 
+                         employees=employees, 
+                         departments=departments,
+                         employee_departments=employee_departments,
+                         company_name=COMPANY_NAME)
 
 
 @app.route("/logout")
@@ -343,9 +462,13 @@ def employee_details() -> Union[Response, str]:
                 keyboard=request.form.get('keyboard'),
                 mouse=request.form.get('mouse'),
                 headset=request.form.get('headset'),
+                more_device=request.form.get('more_device'),
+                bags=request.form.get('bags'),
                 vpn_access=bool(request.form.get('vpn_access')),
                 email_access=bool(request.form.get('email_access')),
-                biometric_access=bool(request.form.get('biometric_access'))
+                biometric_access=bool(request.form.get('biometric_access')),
+                floor_level_1=bool(request.form.get('floor_level_1')),
+                floor_level_2=bool(request.form.get('floor_level_2'))
             )
 
             # Update user profile with validated details
@@ -356,11 +479,15 @@ def employee_details() -> Union[Response, str]:
             user.keyboard = details.keyboard
             user.mouse = details.mouse
             user.headset = details.headset
+            user.more_device = details.more_device
+            user.bags = details.bags
 
             access = {
                 'vpn': details.vpn_access,
                 'email': details.email_access,
-                'biometric': details.biometric_access
+                'biometric': details.biometric_access,
+                'floor_level_1': details.floor_level_1,
+                'floor_level_2': details.floor_level_2
             }
             user.set_access(access)
             user.details_filled = True  # Lock details from further edits
@@ -424,6 +551,55 @@ def employee_raise() -> Union[Response, str]:
 
     tickets: List[Ticket] = Ticket.query.filter_by(employee_id=current_user.id).order_by(Ticket.created_at.desc()).all()
     return render_template('pages/employee/raise_ticket.html', groups=TICKET_GROUPS, tickets=tickets)
+
+
+@app.route('/employee/service-requests', methods=['GET', 'POST'])
+@login_required
+def employee_service_requests() -> Union[Response, str]:
+    """Employee service requests page - handle DevOps and Developer requests"""
+    if current_user.is_admin:
+        flash('Admins cannot access employee service requests', 'error')
+        return redirect(url_for('admin_dashboard'))
+
+    if request.method == 'POST':
+        try:
+            # Validate service request data with Pydantic
+            service_request_data = ServiceRequestCreate(
+                category=request.form.get('category', ''),
+                request_type=request.form.get('request_type', ''),
+                details=request.form.get('details', '')
+            )
+
+            service_request = ServiceRequest(
+                employee_id=current_user.id,
+                category=service_request_data.category,
+                request_type=service_request_data.request_type,
+                details=service_request_data.details,
+                status='Pending',
+                created_at=datetime.now(timezone.utc)
+            )
+            db.session.add(service_request)
+            db.session.commit()
+            logger.info(f"Service request {service_request.id} created successfully for employee {current_user.id}")
+            flash('Service request submitted successfully and is pending approval', 'success')
+            return redirect(url_for('employee_service_requests'))
+
+        except ValidationError as e:
+            logger.error(f"Validation error creating service request: {e}")
+            errors = e.errors()
+            for error in errors:
+                flash(f"{error['loc'][0]}: {error['msg']}", 'error')
+            return redirect(url_for('employee_service_requests'))
+        except Exception as e:
+            logger.error(f"Error creating service request: {e}")
+            flash('An error occurred while creating the service request', 'error')
+            return redirect(url_for('employee_service_requests'))
+
+    # Get employee's service requests
+    service_requests: List[ServiceRequest] = ServiceRequest.query.filter_by(employee_id=current_user.id).order_by(ServiceRequest.created_at.desc()).all()
+    return render_template('pages/employee/service_requests.html', 
+                         service_request_types=SERVICE_REQUEST_TYPES, 
+                         service_requests=service_requests)
 
 
 # Admin area routes
@@ -681,6 +857,76 @@ def admin_reject(ticket_id: int) -> Response:
         flash("An error occurred while rejecting the ticket", "error")
 
     return redirect(url_for("admin_tickets"))
+
+
+@app.route('/admin/service-requests', methods=['GET'])
+@login_required
+@admin_required
+def admin_service_requests() -> str:
+    """Display all service requests for admin review"""
+    service_requests: List[ServiceRequest] = ServiceRequest.query.order_by(ServiceRequest.created_at.desc()).all()
+    employees: List[User] = User.query.filter_by(is_admin=False).all()
+    return render_template('pages/admin/service_requests.html', 
+                         service_requests=service_requests,
+                         service_request_types=SERVICE_REQUEST_TYPES,
+                         employees=employees)
+
+
+@app.route('/admin/service-request/<int:request_id>/approve', methods=['POST'])
+@login_required
+@admin_required
+def admin_approve_service_request(request_id: int) -> Response:
+    """Approve a service request"""
+    try:
+        service_request = ServiceRequest.query.get_or_404(request_id)
+        service_request.status = "Approved"
+        service_request.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        logger.info(f"Admin {current_user.username} approved service request {request_id}")
+        flash(f"Service request #{request_id} approved successfully", "success")
+    except Exception as e:
+        logger.error(f"Error approving service request: {e}")
+        flash("An error occurred while approving the service request", "error")
+
+    return redirect(url_for("admin_service_requests"))
+
+
+@app.route('/admin/service-request/<int:request_id>/reject', methods=['POST'])
+@login_required
+@admin_required
+def admin_reject_service_request(request_id: int) -> Response:
+    """Reject a service request"""
+    try:
+        service_request = ServiceRequest.query.get_or_404(request_id)
+        service_request.status = "Rejected"
+        service_request.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        logger.info(f"Admin {current_user.username} rejected service request {request_id}")
+        flash(f"Service request #{request_id} rejected successfully", "success")
+    except Exception as e:
+        logger.error(f"Error rejecting service request: {e}")
+        flash("An error occurred while rejecting the service request", "error")
+
+    return redirect(url_for("admin_service_requests"))
+
+
+@app.route('/admin/service-request/<int:request_id>/revoke', methods=['POST'])
+@login_required
+@admin_required
+def admin_revoke_service_request(request_id: int) -> Response:
+    """Revoke a previously approved service request"""
+    try:
+        service_request = ServiceRequest.query.get_or_404(request_id)
+        service_request.status = "Revoked"
+        service_request.updated_at = datetime.now(timezone.utc)
+        db.session.commit()
+        logger.info(f"Admin {current_user.username} revoked service request {request_id}")
+        flash(f"Service request #{request_id} revoked successfully", "success")
+    except Exception as e:
+        logger.error(f"Error revoking service request: {e}")
+        flash("An error occurred while revoking the service request", "error")
+
+    return redirect(url_for("admin_service_requests"))
 
 
 # User Management Routes
@@ -953,6 +1199,103 @@ def user_management_password() -> Response:
     return redirect(url_for('user_management'))
 
 
+# GitHub Repository Access Management
+@app.route('/admin/github-access', methods=['GET'])
+@login_required
+@admin_required
+def admin_github_access() -> Union[Response, str]:
+    """Admin view for managing GitHub repository access"""
+    # Get all GitHub access records with employee information
+    access_records = db.session.query(GitHubRepoAccess, User).join(User).order_by(GitHubRepoAccess.created_at.desc()).all()
+    
+    # Get all employees for the grant access form
+    employees = User.query.filter_by(is_admin=False).order_by(User.username).all()
+    
+    return render_template('pages/admin/github_access.html', 
+                         access_records=access_records,
+                         employees=employees,
+                         company_name=COMPANY_NAME)
+
+
+@app.route('/admin/github-access/grant', methods=['POST'])
+@login_required
+@admin_required
+def admin_grant_github_access() -> Response:
+    """Grant GitHub repository access to an employee"""
+    try:
+        employee_id = request.form.get('employee_id')
+        repo_name = request.form.get('repo_name', '').strip()
+        
+        if not employee_id or not repo_name:
+            flash('Employee and repository name are required', 'error')
+            return redirect(url_for('admin_github_access'))
+        
+        employee = User.query.get(int(employee_id))
+        if not employee:
+            flash('Employee not found', 'error')
+            return redirect(url_for('admin_github_access'))
+        
+        # Check if access already exists and is active
+        existing = GitHubRepoAccess.query.filter_by(
+            employee_id=employee.id, 
+            repo_name=repo_name, 
+            is_active=True
+        ).first()
+        
+        if existing:
+            flash(f'Employee already has active access to {repo_name}', 'warning')
+            return redirect(url_for('admin_github_access'))
+        
+        # Create new access record
+        access = GitHubRepoAccess(
+            employee_id=employee.id,
+            repo_name=repo_name,
+            is_active=True
+        )
+        db.session.add(access)
+        db.session.commit()
+        
+        logger.info(f"Admin {current_user.username} granted {employee.username} access to {repo_name}")
+        flash(f'Access granted to {employee.username} for repository: {repo_name}', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error granting GitHub access: {e}")
+        flash('An error occurred while granting access', 'error')
+    
+    return redirect(url_for('admin_github_access'))
+
+
+@app.route('/admin/github-access/revoke/<int:access_id>', methods=['POST'])
+@login_required
+@admin_required
+def admin_revoke_github_access(access_id: int) -> Response:
+    """Revoke GitHub repository access"""
+    try:
+        access = GitHubRepoAccess.query.get(access_id)
+        if not access:
+            flash('Access record not found', 'error')
+            return redirect(url_for('admin_github_access'))
+        
+        if not access.is_active:
+            flash('Access is already revoked', 'warning')
+            return redirect(url_for('admin_github_access'))
+        
+        access.is_active = False
+        access.access_revoked_date = datetime.now(timezone.utc)
+        db.session.commit()
+        
+        logger.info(f"Admin {current_user.username} revoked GitHub access for {access.employee.username} from {access.repo_name}")
+        flash(f'Access revoked for {access.employee.username} from repository: {access.repo_name}', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error revoking GitHub access: {e}")
+        flash('An error occurred while revoking access', 'error')
+    
+    return redirect(url_for('admin_github_access'))
+
+
 # Initialize database and seed default data
 def bootstrap() -> None:
     db.create_all()
@@ -963,11 +1306,19 @@ def bootstrap() -> None:
         db.session.add(admin)
         print("Created default admin user")
 
-    employees = ["MohanTeja", "Hari", "Aparna", "Ramu", "Sai Prasanth"]
+    # Employees with departments
+    employees = [
+        ("MohanTeja", "Engineering"),
+        ("Hari", "Engineering"),
+        ("Aparna", "HR"),
+        ("Ramu", "Operations"),
+        ("Sai Prasanth", "Engineering")
+    ]
     employees_created = 0
-    for e in employees:
-        if not User.query.filter_by(username=e).first():
-            emp = User(username=e, is_admin=False)
+    for username, department in employees:
+        if not User.query.filter_by(username=username).first():
+            emp = User(username=username, is_admin=False)
+            emp.department = department
             emp.set_password("Ckompare")
             db.session.add(emp)
             employees_created += 1

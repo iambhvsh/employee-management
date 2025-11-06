@@ -1,0 +1,282 @@
+{% extends 'layouts/employee.html' %} {% from 'ui/page.html' import header %} {%
+block page_content %}
+<div class="main-content">
+  {{ header('Service Requests', 'Submit DevOps or Developer service requests',
+  'support') }}
+
+  <!-- Service Request Form Card -->
+  <div class="card">
+    <h3>
+      <span class="material-symbols-outlined">add_circle</span>
+      Create New Service Request
+    </h3>
+    <form
+      method="post"
+      action="{{ url_for('employee_service_requests') }}"
+      id="serviceRequestForm"
+    >
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+      <label>Category <span style="color: var(--danger-color)">*</span></label>
+      <select
+        name="category"
+        id="categorySelect"
+        required
+        class="dashboard-form-input"
+      >
+        <option value="">-- Select Category --</option>
+        <option value="DevOps">DevOps Requests</option>
+        <option value="Developer">Developer Requests</option>
+      </select>
+
+      <label
+        >Request Type <span style="color: var(--danger-color)">*</span></label
+      >
+      <select
+        name="request_type"
+        id="requestTypeSelect"
+        required
+        class="dashboard-form-input"
+      >
+        <option value="">-- Select Request Type --</option>
+      </select>
+
+      <label>Additional Details (Optional)</label>
+      <textarea
+        name="details"
+        placeholder="Provide any additional information about your request..."
+        class="dashboard-form-textarea"
+        rows="4"
+      ></textarea>
+
+      <div class="flex-gap-12">
+        <button
+          type="submit"
+          style="flex: 0 1 auto; min-width: 180px; max-width: 250px"
+        >
+          <span class="material-symbols-outlined button-icon-sm">send</span>
+          Submit Request
+        </button>
+        <button
+          type="reset"
+          class="btn-secondary"
+          style="flex: 0 1 auto; min-width: 120px; max-width: 150px"
+        >
+          <span class="material-symbols-outlined button-icon-sm">refresh</span>
+          Reset
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Service Request Types Info -->
+  <div
+    class="card"
+    style="
+      background: var(--gray-a2);
+      border-left: 4px solid var(--primary-color);
+    "
+  >
+    <h4 style="margin-top: 0; color: var(--foreground)">
+      <span class="material-symbols-outlined" style="vertical-align: middle"
+        >info</span
+      >
+      Available Service Request Types
+    </h4>
+
+    <div
+      style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-top: 1rem;
+      "
+    >
+      <!-- DevOps Requests -->
+      <div>
+        <h5 style="color: var(--primary-color); margin-bottom: 0.75rem">
+          <span
+            class="material-symbols-outlined"
+            style="vertical-align: middle; font-size: 1.2rem"
+            >settings</span
+          >
+          DevOps Requests
+        </h5>
+        <ul style="list-style: none; padding: 0; margin: 0">
+          {% for request_type in service_request_types['DevOps'] %}
+          <li
+            style="
+              padding: 0.5rem;
+              margin-bottom: 0.5rem;
+              background: var(--surface);
+              border-radius: 4px;
+              border: 1px solid var(--border);
+            "
+          >
+            <span
+              class="material-symbols-outlined"
+              style="
+                vertical-align: middle;
+                font-size: 1rem;
+                color: var(--primary-color);
+              "
+              >check_circle</span
+            >
+            {{ request_type }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- Developer Requests -->
+      <div>
+        <h5 style="color: var(--success-color); margin-bottom: 0.75rem">
+          <span
+            class="material-symbols-outlined"
+            style="vertical-align: middle; font-size: 1.2rem"
+            >code</span
+          >
+          Developer Requests
+        </h5>
+        <ul style="list-style: none; padding: 0; margin: 0">
+          {% for request_type in service_request_types['Developer'] %}
+          <li
+            style="
+              padding: 0.5rem;
+              margin-bottom: 0.5rem;
+              background: var(--surface);
+              border-radius: 4px;
+              border: 1px solid var(--border);
+            "
+          >
+            <span
+              class="material-symbols-outlined"
+              style="
+                vertical-align: middle;
+                font-size: 1rem;
+                color: var(--success-color);
+              "
+              >check_circle</span
+            >
+            {{ request_type }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- My Service Requests History -->
+  <h3 class="section-title">
+    <span class="material-symbols-outlined">history</span>
+    My Service Request History
+  </h3>
+
+  {% if service_requests %}
+  <div class="table-responsive">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Category</th>
+          <th>Request Type</th>
+          <th>Details</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th>Last Updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in service_requests %}
+        <tr>
+          <td><strong>#{{ req.id }}</strong></td>
+          <td>
+            <span
+              class="badge {% if req.category == 'DevOps' %}badge-primary{% else %}badge-success{% endif %}"
+            >
+              {{ req.category }}
+            </span>
+          </td>
+          <td>{{ req.request_type }}</td>
+          <td>
+            {% if req.details %}
+            <span title="{{ req.details }}">
+              {{ req.details[:50] }}{% if req.details|length > 50 %}...{% endif
+              %}
+            </span>
+            {% else %}
+            <em style="color: var(--text-secondary)">No details provided</em>
+            {% endif %}
+          </td>
+          <td>
+            {% if req.status == 'Pending' %}
+            <span class="status-badge status-badge-warning">
+              <span class="material-symbols-outlined">pending</span>
+              Pending
+            </span>
+            {% elif req.status == 'Approved' %}
+            <span class="status-badge status-badge-success">
+              <span class="material-symbols-outlined">check_circle</span>
+              Approved
+            </span>
+            {% elif req.status == 'Rejected' %}
+            <span class="status-badge status-badge-danger">
+              <span class="material-symbols-outlined">cancel</span>
+              Rejected
+            </span>
+            {% elif req.status == 'Revoked' %}
+            <span class="status-badge status-badge-secondary">
+              <span class="material-symbols-outlined">block</span>
+              Revoked
+            </span>
+            {% endif %}
+          </td>
+          <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+          <td>{{ req.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="material-symbols-outlined empty-state-icon">inbox</span>
+    <p class="empty-state-text">No service requests yet</p>
+    <p class="empty-state-subtext">
+      Submit your first service request using the form above
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  // Dynamic request type dropdown based on category
+  document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('categorySelect');
+    const requestTypeSelect = document.getElementById('requestTypeSelect');
+
+    const requestTypes = {{ service_request_types | tojson }};
+
+    categorySelect.addEventListener('change', function() {
+      const category = this.value;
+      requestTypeSelect.innerHTML = '<option value="">-- Select Request Type --</option>';
+
+      if (category && requestTypes[category]) {
+        requestTypes[category].forEach(function(type) {
+          const option = document.createElement('option');
+          option.value = type;
+          option.textContent = type;
+          requestTypeSelect.appendChild(option);
+        });
+        requestTypeSelect.disabled = false;
+      } else {
+        requestTypeSelect.disabled = true;
+      }
+    });
+
+    // Initially disable request type select
+    requestTypeSelect.disabled = true;
+  });
+</script>
+
+{% endblock %}

@@ -1,0 +1,488 @@
+{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
+block page_content %}
+<div class="main-content">
+  {{ header('Service Requests Management', 'Approve, reject, or revoke employee
+  service requests', 'support_agent') }}
+
+  <!-- Statistics Cards -->
+  <div class="dashboard-grid">
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-primary">
+        <span class="material-symbols-outlined">list_alt</span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">{{ service_requests|length }}</div>
+        <div class="stat-label">Total Requests</div>
+        <div class="stat-trend stat-trend-primary">
+          <span class="material-symbols-outlined stat-trend-icon"
+            >receipt_long</span
+          >
+          <span>All requests</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-warning">
+        <span class="material-symbols-outlined">pending</span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">
+          {{ service_requests|selectattr('status', 'equalto',
+          'Pending')|list|length }}
+        </div>
+        <div class="stat-label">Pending Review</div>
+        <div class="stat-trend stat-trend-warning">
+          <span class="material-symbols-outlined stat-trend-icon"
+            >schedule</span
+          >
+          <span>Awaiting action</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-success">
+        <span class="material-symbols-outlined">check_circle</span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">
+          {{ service_requests|selectattr('status', 'equalto',
+          'Approved')|list|length }}
+        </div>
+        <div class="stat-label">Approved</div>
+        <div class="stat-trend positive">
+          <span class="material-symbols-outlined stat-trend-icon"
+            >done_all</span
+          >
+          <span>Approved</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon stat-icon-danger">
+        <span class="material-symbols-outlined">cancel</span>
+      </div>
+      <div class="stat-content">
+        <div class="stat-value">
+          {{ service_requests|selectattr('status', 'equalto',
+          'Rejected')|list|length }}
+        </div>
+        <div class="stat-label">Rejected</div>
+        <div class="stat-trend negative">
+          <span class="material-symbols-outlined stat-trend-icon">close</span>
+          <span>Declined</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div
+    class="card"
+    style="
+      border: none;
+      box-shadow: none;
+      background: transparent;
+      padding: 0.5rem 0;
+    "
+  >
+    <div
+      class="filter-tabs"
+      style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding: 0.5rem 0"
+    >
+      <button class="filter-tab active" data-filter="all">
+        <span class="material-symbols-outlined" style="font-size: 1.1rem"
+          >list_alt</span
+        >
+        All Requests
+      </button>
+      <button class="filter-tab" data-filter="Pending">
+        <span class="material-symbols-outlined" style="font-size: 1.1rem"
+          >pending</span
+        >
+        Pending
+      </button>
+      <button class="filter-tab" data-filter="Approved">
+        <span class="material-symbols-outlined" style="font-size: 1.1rem"
+          >check_circle</span
+        >
+        Approved
+      </button>
+      <button class="filter-tab" data-filter="Rejected">
+        <span class="material-symbols-outlined" style="font-size: 1.1rem"
+          >cancel</span
+        >
+        Rejected
+      </button>
+      <button class="filter-tab" data-filter="Revoked">
+        <span class="material-symbols-outlined" style="font-size: 1.1rem"
+          >block</span
+        >
+        Revoked
+      </button>
+    </div>
+  </div>
+
+  <!-- Service Requests Table -->
+  {% if service_requests %}
+  <div class="card">
+    <h3>
+      <span class="material-symbols-outlined">assignment</span>
+      Service Requests
+    </h3>
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Employee</th>
+            <th>Category</th>
+            <th>Request Type</th>
+            <th>Details</th>
+            <th>Status</th>
+            <th>Submitted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="requestsTableBody">
+          {% for req in service_requests %}
+          <tr data-status="{{ req.status }}">
+            <td><strong>#{{ req.id }}</strong></td>
+            <td>
+              {% if req.employee %}
+              <span title="Employee ID: {{ req.employee.id }}"
+                >{{ req.employee.username }}</span
+              >
+              {% else %}
+              <em style="color: var(--text-secondary)">Unknown</em>
+              {% endif %}
+            </td>
+            <td>
+              {% if req.category == 'DevOps' %}
+              <span
+                class="badge badge-primary"
+                style="display: inline-flex; align-items: center; gap: 0.25rem"
+              >
+                <span class="material-symbols-outlined" style="font-size: 1rem"
+                  >settings</span
+                >
+                {{ req.category }}
+              </span>
+              {% else %}
+              <span
+                class="badge badge-success"
+                style="display: inline-flex; align-items: center; gap: 0.25rem"
+              >
+                <span class="material-symbols-outlined" style="font-size: 1rem"
+                  >code</span
+                >
+                {{ req.category }}
+              </span>
+              {% endif %}
+            </td>
+            <td><strong>{{ req.request_type }}</strong></td>
+            <td>
+              {% if req.details %}
+              <div
+                title="{{ req.details }}"
+                style="
+                  max-width: 300px;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                "
+              >
+                {{ req.details }}
+              </div>
+              {% else %}
+              <em style="color: var(--text-secondary)">No details</em>
+              {% endif %}
+            </td>
+            <td>
+              {% if req.status == 'Pending' %}
+              <span class="status-badge status-badge-warning">
+                <span class="material-symbols-outlined">pending</span>
+                Pending
+              </span>
+              {% elif req.status == 'Approved' %}
+              <span class="status-badge status-badge-success">
+                <span class="material-symbols-outlined">check_circle</span>
+                Approved
+              </span>
+              {% elif req.status == 'Rejected' %}
+              <span class="status-badge status-badge-danger">
+                <span class="material-symbols-outlined">cancel</span>
+                Rejected
+              </span>
+              {% elif req.status == 'Revoked' %}
+              <span class="status-badge status-badge-secondary">
+                <span class="material-symbols-outlined">block</span>
+                Revoked
+              </span>
+              {% endif %}
+            </td>
+            <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td>
+              <div
+                style="
+                  display: flex;
+                  gap: 0.5rem;
+                  flex-wrap: nowrap;
+                  align-items: center;
+                "
+              >
+                {% if req.status == 'Pending' %}
+                <form
+                  method="post"
+                  action="{{ url_for('admin_approve_service_request', request_id=req.id) }}"
+                  style="display: inline; margin: 0"
+                >
+                  <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                  />
+                  <button
+                    type="submit"
+                    class="btn-action btn-success"
+                    title="Approve Request"
+                    style="
+                      padding: 0.35rem 0.75rem;
+                      font-size: 0.813rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    <span
+                      class="material-symbols-outlined"
+                      style="font-size: 0.95rem"
+                      >check</span
+                    >
+                    Approve
+                  </button>
+                </form>
+                <form
+                  method="post"
+                  action="{{ url_for('admin_reject_service_request', request_id=req.id) }}"
+                  style="display: inline; margin: 0"
+                >
+                  <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                  />
+                  <button
+                    type="submit"
+                    class="btn-action btn-danger"
+                    title="Reject Request"
+                    style="
+                      padding: 0.35rem 0.75rem;
+                      font-size: 0.813rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    <span
+                      class="material-symbols-outlined"
+                      style="font-size: 0.95rem"
+                      >close</span
+                    >
+                    Reject
+                  </button>
+                </form>
+                {% elif req.status == 'Approved' %}
+                <form
+                  method="post"
+                  action="{{ url_for('admin_revoke_service_request', request_id=req.id) }}"
+                  style="display: inline; margin: 0"
+                >
+                  <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                  />
+                  <button
+                    type="submit"
+                    class="btn-action btn-secondary"
+                    title="Revoke Approval"
+                    style="
+                      padding: 0.35rem 0.75rem;
+                      font-size: 0.813rem;
+                      white-space: nowrap;
+                    "
+                  >
+                    <span
+                      class="material-symbols-outlined"
+                      style="font-size: 0.95rem"
+                      >block</span
+                    >
+                    Revoke
+                  </button>
+                </form>
+                {% else %}
+                <span
+                  style="color: var(--muted-foreground); font-size: 0.813rem"
+                  >No actions</span
+                >
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="material-symbols-outlined empty-state-icon">inbox</span>
+    <p class="empty-state-text">No service requests found</p>
+    <p class="empty-state-subtext">
+      Service requests will appear here when employees submit them
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .filter-tabs {
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary, #6b7280);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .filter-tab:hover:not(.active) {
+    background: var(--hover-bg, #f3f4f6);
+    color: var(--text-primary, #111827);
+  }
+
+  .filter-tab.active {
+    background: var(--primary-light, #eff6ff);
+    color: var(--primary-color, #3b82f6);
+    font-weight: 600;
+  }
+
+  .filter-tab .material-symbols-outlined {
+    transition: transform 0.2s ease;
+  }
+
+  .filter-tab:hover .material-symbols-outlined {
+    transform: scale(1.1);
+  }
+
+  .btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  }
+
+  .btn-action:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .btn-success {
+    background: #22c55e;
+    color: white;
+  }
+
+  .btn-success:hover {
+    background: #16a34a;
+  }
+
+  .btn-danger {
+    background: #ef4444;
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background: #dc2626;
+  }
+
+  .btn-secondary {
+    background: #6b7280;
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    background: #4b5563;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: var(--surface, white);
+    border-radius: 12px;
+    border: 2px dashed var(--border, #e5e7eb);
+  }
+
+  .empty-state-icon {
+    font-size: 5rem !important;
+    color: var(--muted-foreground, #9ca3af);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--foreground, #111827);
+    margin: 0.5rem 0;
+  }
+
+  .empty-state-subtext {
+    font-size: 0.95rem;
+    color: var(--muted-foreground, #6b7280);
+    margin: 0;
+  }
+</style>
+
+<script>
+  // Filter functionality
+  document.addEventListener("DOMContentLoaded", function () {
+    const filterTabs = document.querySelectorAll(".filter-tab");
+    const tableRows = document.querySelectorAll("#requestsTableBody tr");
+
+    filterTabs.forEach((tab) => {
+      tab.addEventListener("click", function () {
+        // Update active tab
+        filterTabs.forEach((t) => t.classList.remove("active"));
+        this.classList.add("active");
+
+        // Filter rows
+        const filter = this.getAttribute("data-filter");
+        tableRows.forEach((row) => {
+          if (filter === "all") {
+            row.style.display = "";
+          } else {
+            const status = row.getAttribute("data-status");
+            row.style.display = status === filter ? "" : "none";
+          }
+        });
+      });
+    });
+  });
+</script>
+
+{% endblock %}

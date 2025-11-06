@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login - Employee Portal</title>
+    <title>Login - {{ company_name }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -34,7 +34,7 @@
               >enterprise</span
             >
           </div>
-          <h1>Employee Portal</h1>
+          <h1>{{ company_name }}</h1>
           <p>Sign in to continue to your workspace</p>
         </div>
 
@@ -42,10 +42,26 @@
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
           <div class="form-group">
             <label for="role">Role</label>
-            <select id="role" name="role" required onchange="updateUsernames()">
+            <select
+              id="role"
+              name="role"
+              required
+              onchange="updateDepartments()"
+            >
               <option value="">Choose your role</option>
               <option value="admin">Admin</option>
               <option value="employee">Employee</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="departmentGroup" style="display: none">
+            <label for="department">Department</label>
+            <select
+              id="department"
+              name="department"
+              onchange="updateUsernames()"
+            >
+              <option value="">Select your department</option>
             </select>
           </div>
 
@@ -75,9 +91,43 @@
     <script>
       const admins = {{ admins | tojson }};
       const employees = {{ employees | tojson }};
+      const departments = {{ departments | tojson }};
+      const employeeDepartments = {{ employee_departments | tojson }};
+
+      function updateDepartments() {
+        const role = document.getElementById('role').value;
+        const departmentGroup = document.getElementById('departmentGroup');
+        const departmentSelect = document.getElementById('department');
+        const usernameSelect = document.getElementById('username');
+
+        // Reset username select
+        usernameSelect.innerHTML = '<option value="">First select a role</option>';
+        usernameSelect.disabled = true;
+
+        if (role === 'admin') {
+          // Hide department for admin
+          departmentGroup.style.display = 'none';
+          departmentSelect.value = '';
+          // Directly show admins
+          updateUsernames();
+        } else if (role === 'employee') {
+          // Show department for employees
+          departmentGroup.style.display = 'block';
+          departmentSelect.innerHTML = '<option value="">Select your department</option>';
+          departments.forEach(dept => {
+            const option = document.createElement('option');
+            option.value = dept;
+            option.textContent = dept;
+            departmentSelect.appendChild(option);
+          });
+        } else {
+          departmentGroup.style.display = 'none';
+        }
+      }
 
       function updateUsernames() {
         const role = document.getElementById('role').value;
+        const department = document.getElementById('department').value;
         const usernameSelect = document.getElementById('username');
 
         usernameSelect.innerHTML = '<option value="">Select your username</option>';
@@ -90,14 +140,18 @@
             option.textContent = name;
             usernameSelect.appendChild(option);
           });
-        } else if (role === 'employee') {
+        } else if (role === 'employee' && department) {
           usernameSelect.disabled = false;
-          employees.forEach(name => {
+          const deptEmployees = employeeDepartments[department] || [];
+          deptEmployees.forEach(name => {
             const option = document.createElement('option');
             option.value = name;
             option.textContent = name;
             usernameSelect.appendChild(option);
           });
+        } else if (role === 'employee' && !department) {
+          usernameSelect.disabled = true;
+          usernameSelect.innerHTML = '<option value="">First select a department</option>';
         } else {
           usernameSelect.disabled = true;
           usernameSelect.innerHTML = '<option value="">First select a role</option>';

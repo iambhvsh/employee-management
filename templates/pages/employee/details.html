@@ -1,7 +1,6 @@
 {% extends 'layouts/employee.html' %} {% from 'ui/page.html' import header %} {%
 from 'ui/form.html' import input, checkbox %} {% block page_content %} {{
 header('My Details', 'View and manage your personal information and assets') }}
-
 {% if user.details_filled %}
 <div class="info-banner info-banner-warning">
   <span class="material-symbols-outlined">lightbulb</span>
@@ -19,7 +18,7 @@ header('My Details', 'View and manage your personal information and assets') }}
 {% endif %}
 
 <div class="card">
-    <!-- Employee details form (editable only once) -->
+  <!-- Employee details form (editable only once) -->
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
     <h3 class="section-header-first">Contact Information</h3>
@@ -41,7 +40,10 @@ header('My Details', 'View and manage your personal information and assets') }}
     'Keyboard', user.keyboard or '', 'e.g., Logitech K380', user.details_filled)
     }} {{ input('mouse', 'Mouse', user.mouse or '', 'e.g., Logitech M590',
     user.details_filled) }} {{ input('headset', 'Headset', user.headset or '',
-    'e.g., Jabra Evolve 40', user.details_filled) }}
+    'e.g., Jabra Evolve 40', user.details_filled) }} {{ input('more_device',
+    'More Device', user.more_device or '', 'e.g., iPhone 14 Pro, Samsung Galaxy
+    S23', user.details_filled) }} {{ input('bags', 'Bags', user.bags or '',
+    'e.g., Office laptop bag', user.details_filled) }}
 
     <h3 class="section-header">
       <span class="material-symbols-outlined section-header-icon">lock</span>
@@ -51,8 +53,10 @@ header('My Details', 'View and manage your personal information and assets') }}
     {% set acc = user.get_access() %} {{ checkbox('vpn_access', 'VPN Access',
     acc.vpn, user.details_filled) }} {{ checkbox('email_access', 'Email Access',
     acc.email, user.details_filled) }} {{ checkbox('biometric_access',
-    'Biometric Access', acc.biometric, user.details_filled) }} {% if not
-    user.details_filled %}
+    'Biometric Access', acc.biometric, user.details_filled) }} {{
+    checkbox('floor_level_1', 'Floor Level 1', acc.floor_level_1,
+    user.details_filled) }} {{ checkbox('floor_level_2', 'Floor Level 2',
+    acc.floor_level_2, user.details_filled) }} {% if not user.details_filled %}
     <div class="form-section-divider">
       <button type="submit" class="button-with-icon">
         <span class="material-symbols-outlined button-icon">save</span>
