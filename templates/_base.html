@@ -5,6 +5,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Employee Portal{% endblock %}</title>
+
+    <!-- Inline script to prevent theme flash - runs before page render -->
+    <script>
+      (function () {
+        const theme = localStorage.getItem("theme") || "light";
+        document.documentElement.setAttribute("data-theme", theme);
+      })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -21,8 +30,7 @@
     />
   </head>
   <body>
-    
-        <!-- Flash notification system -->
+    <!-- Flash notification system -->
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %}
     <div class="flash-container">

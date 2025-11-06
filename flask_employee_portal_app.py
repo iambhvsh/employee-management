@@ -752,7 +752,24 @@ def admin_employees() -> Union[Response, str]:
             return redirect(url_for('admin_employees'))
 
     employees: List[User] = User.query.filter_by(is_admin=False).order_by(User.username).all()
-    return render_template('pages/admin/employees_manage.html', employees=employees)
+    
+    # Convert User objects to dictionaries for JSON serialization
+    employees_data = []
+    for emp in employees:
+        employees_data.append({
+            'id': emp.id,
+            'username': emp.username,
+            'phone': emp.phone or '',
+            'email': emp.email or '',
+            'laptop': emp.laptop or '',
+            'charger': emp.charger or '',
+            'keyboard': emp.keyboard or '',
+            'mouse': emp.mouse or '',
+            'headset': emp.headset or '',
+            'access': emp.get_access()
+        })
+    
+    return render_template('pages/admin/employees_manage.html', employees=employees, employees_data=employees_data)
 
 
 @app.route('/admin/tickets', methods=['GET'])

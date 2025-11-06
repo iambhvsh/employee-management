@@ -1,6 +1,9 @@
-{% extends 'layouts/admin.html' %} {% from 'ui/page.html' import header %} {%
-from 'ui/card.html' import empty %} {% block page_content %} {{ header('User
-Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
+{% extends 'layouts/admin.html' %}
+{% from 'ui/page.html' import header %}
+{% from 'ui/card.html' import empty %}
+
+{% block page_content %}
+{{ header('User Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
 <div class="info-banner info-banner-primary">
   <span class="material-symbols-outlined">info</span>
@@ -8,16 +11,13 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     <strong class="info-banner-title">User Management</strong>
     <div class="info-banner-text">
       <div class="info-banner-text-item">
-        <strong>Administrators:</strong> {{ admins|length }} accounts with full
-        system access
+        <strong>Administrators:</strong> {{ admins|length }} accounts with full system access
       </div>
       <div class="info-banner-text-item">
-        <strong>Employees:</strong> {{ employees|length }} standard user
-        accounts
+        <strong>Employees:</strong> {{ employees|length }} standard user accounts
       </div>
       <div class="info-banner-text-last">
-        Manage user accounts, roles, and passwords from this centralized
-        interface.
+        Manage user accounts, roles, and passwords from this centralized interface.
       </div>
     </div>
   </div>
@@ -76,8 +76,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 </div>
 {% else %}
 <div class="card">
-  {{ empty('shield_person', 'No administrators found', 'No administrator
-  accounts exist') }}
+  {{ empty('shield_person', 'No administrators found', 'No administrator accounts exist') }}
 </div>
 {% endif %}
 
@@ -147,11 +146,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     <span class="material-symbols-outlined card-header-icon">person_add</span>
     Create New User
   </h3>
-  <form
-    method="POST"
-    action="{{ url_for('user_management_create') }}"
-    class="ticket-form"
-  >
+  <form method="POST" action="{{ url_for('user_management_create') }}" class="ticket-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
     <label>Username <span class="required-asterisk">*</span></label>
@@ -243,20 +238,11 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     <span class="material-symbols-outlined card-header-icon">lock_reset</span>
     Change User Password
   </h3>
-  <form
-    method="POST"
-    action="{{ url_for('user_management_password') }}"
-    class="ticket-form"
-  >
+  <form method="POST" action="{{ url_for('user_management_password') }}" class="ticket-form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
     <label>Select User <span class="required-asterisk">*</span></label>
-    <select
-      id="pwd_user_id"
-      name="user_id"
-      required
-      onchange="updatePasswordInfo(this)"
-    >
+    <select id="pwd_user_id" name="user_id" required onchange="updatePasswordInfo(this)">
       <option value="">Choose User</option>
       <optgroup label="Administrators">
         {% for admin in admins %}
@@ -276,9 +262,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
     <div id="pwd_user_info" class="info-message-box">
       <span class="material-symbols-outlined info-icon-blue">info</span>
-      <span
-        >Changing password for: <strong id="pwd_username_display"></strong
-      ></span>
+      <span>Changing password for: <strong id="pwd_username_display"></strong></span>
     </div>
 
     <label>New Password <span class="required-asterisk">*</span></label>
@@ -330,19 +314,12 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
-    <form
-      method="POST"
-      action="{{ url_for('user_management_edit') }}"
-      class="ticket-form m-0"
-    >
+    <form method="POST" action="{{ url_for('user_management_edit') }}" class="ticket-form m-0">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" id="edit_user_id" name="user_id" />
 
       <!-- Error Alert Box -->
-      <div
-        id="edit_error_alert"
-        class="validation-alert validation-alert-error d-none"
-      >
+      <div id="edit_error_alert" class="validation-alert validation-alert-error d-none">
         <span class="material-symbols-outlined">error</span>
         <div>
           <strong>Please fix the following errors:</strong>
@@ -483,11 +460,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
       </label>
 
       <label class="checkbox-container">
-        <input
-          type="checkbox"
-          name="biometric_access"
-          id="edit_biometric_access"
-        />
+        <input type="checkbox" name="biometric_access" id="edit_biometric_access" />
         <span>Biometric Access</span>
       </label>
 
@@ -496,11 +469,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
           <span class="material-symbols-outlined button-icon-sm">save</span>
           Save Changes
         </button>
-        <button
-          type="button"
-          class="btn-secondary"
-          onclick="attemptCloseEditModal()"
-        >
+        <button type="button" class="btn-secondary" onclick="attemptCloseEditModal()">
           <span class="material-symbols-outlined button-icon-sm">close</span>
           Cancel
         </button>
@@ -523,12 +492,10 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     </div>
     <div class="modal-body">
       <p class="modal-text">
-        Are you sure you want to delete user
-        <strong id="delete_username_display"></strong>?
+        Are you sure you want to delete user <strong id="delete_username_display"></strong>?
       </p>
       <p class="modal-warning-box">
-        This action cannot be undone. All associated tickets will remain but be
-        orphaned.
+        This action cannot be undone. All associated tickets will remain but be orphaned.
       </p>
     </div>
     <form method="POST" action="{{ url_for('user_management_delete') }}">
@@ -540,11 +507,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
           <span class="material-symbols-outlined button-icon-sm">delete</span>
           Delete User
         </button>
-        <button
-          type="button"
-          class="btn-secondary"
-          onclick="closeDeleteModal()"
-        >
+        <button type="button" class="btn-secondary" onclick="closeDeleteModal()">
           <span class="material-symbols-outlined button-icon-sm">close</span>
           Cancel
         </button>
@@ -614,10 +577,10 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
   function validateAssetField(value, fieldName) {
     if (!value || value.trim().length === 0) {
-      return `${fieldName} is required`;
+      return fieldName + " is required";
     }
     if (value.length > 200) {
-      return `${fieldName} is too long (maximum 200 characters)`;
+      return fieldName + " is too long (maximum 200 characters)";
     }
     return null;
   }
@@ -651,7 +614,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
     if (alertBox && errorList) {
       errorList.innerHTML = "";
-      errors.forEach((error) => {
+      errors.forEach(function(error) {
         const li = document.createElement("li");
         li.textContent = error;
         errorList.appendChild(li);
@@ -672,9 +635,9 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
   function editUser(userId, username, isAdmin) {
     hideModalError();
 
-    fetch(`/admin/users/${userId}/data`)
-      .then((response) => response.json())
-      .then((user) => {
+    fetch('/admin/users/' + userId + '/data')
+      .then(function(response) { return response.json(); })
+      .then(function(user) {
         document.getElementById("edit_user_id").value = userId;
         document.getElementById("edit_username").value = username;
         document.getElementById("edit_is_admin").checked = isAdmin;
@@ -689,19 +652,16 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
         document.getElementById("edit_headset").value = user.headset || "";
 
         const access = user.access || {};
-        document.getElementById("edit_vpn_access").checked =
-          access.vpn || false;
-        document.getElementById("edit_email_access").checked =
-          access.email || false;
-        document.getElementById("edit_biometric_access").checked =
-          access.biometric || false;
+        document.getElementById("edit_vpn_access").checked = access.vpn || false;
+        document.getElementById("edit_email_access").checked = access.email || false;
+        document.getElementById("edit_biometric_access").checked = access.biometric || false;
 
         // Clear any previous validation states
         clearAllEditFieldErrors();
 
         document.getElementById("editModal").classList.add("active");
       })
-      .catch((error) => {
+      .catch(function(error) {
         console.error("Error fetching user data:", error);
         alert("❌ Failed to load user data. Please try again.");
       });
@@ -718,7 +678,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
       "edit_mouse",
       "edit_headset",
     ];
-    fieldIds.forEach((id) => {
+    fieldIds.forEach(function(id) {
       const field = document.getElementById(id);
       const errorDiv = document.getElementById(id + "_error");
       if (field) {
@@ -744,8 +704,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     if (usernameError) {
       errors.push(usernameError);
       showFieldError("edit_username", usernameError);
-      if (!firstErrorField)
-        firstErrorField = document.getElementById("edit_username");
+      if (!firstErrorField) firstErrorField = document.getElementById("edit_username");
     } else {
       clearFieldError("edit_username");
     }
@@ -756,8 +715,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     if (emailError) {
       errors.push(emailError);
       showFieldError("edit_email", emailError);
-      if (!firstErrorField)
-        firstErrorField = document.getElementById("edit_email");
+      if (!firstErrorField) firstErrorField = document.getElementById("edit_email");
     } else {
       clearFieldError("edit_email");
     }
@@ -768,8 +726,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     if (phoneError) {
       errors.push(phoneError);
       showFieldError("edit_phone", phoneError);
-      if (!firstErrorField)
-        firstErrorField = document.getElementById("edit_phone");
+      if (!firstErrorField) firstErrorField = document.getElementById("edit_phone");
     } else {
       clearFieldError("edit_phone");
     }
@@ -783,14 +740,13 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
       { id: "edit_headset", name: "Headset" },
     ];
 
-    assets.forEach((asset) => {
+    assets.forEach(function(asset) {
       const value = document.getElementById(asset.id).value.trim();
       const error = validateAssetField(value, asset.name);
       if (error) {
         errors.push(error);
         showFieldError(asset.id, error);
-        if (!firstErrorField)
-          firstErrorField = document.getElementById(asset.id);
+        if (!firstErrorField) firstErrorField = document.getElementById(asset.id);
       } else {
         clearFieldError(asset.id);
       }
@@ -817,22 +773,10 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     const mouse = document.getElementById("edit_mouse").value.trim();
     const headset = document.getElementById("edit_headset").value.trim();
 
-    const hasData =
-      username ||
-      email ||
-      phone ||
-      laptop ||
-      charger ||
-      keyboard ||
-      mouse ||
-      headset;
+    const hasData = username || email || phone || laptop || charger || keyboard || mouse || headset;
 
     if (hasData) {
-      if (
-        confirm(
-          "⚠️ You have unsaved changes. Are you sure you want to close without saving?"
-        )
-      ) {
+      if (confirm("⚠️ You have unsaved changes. Are you sure you want to close without saving?")) {
         closeEditModal();
       }
     } else {
@@ -874,30 +818,21 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
   }
 
   // Form Validation on Submit
-  document.addEventListener("DOMContentLoaded", function () {
+  document.addEventListener("DOMContentLoaded", function() {
     // Create User Form Validation
-    const createForm = document.querySelector(
-      'form[action*="user_management_create"]'
-    );
+    const createForm = document.querySelector('form[action*="user_management_create"]');
     if (createForm) {
-      createForm.addEventListener("submit", function (e) {
+      createForm.addEventListener("submit", function(e) {
         const errors = [];
 
         const username = document.getElementById("new_username").value.trim();
         const password = document.getElementById("new_password").value;
-        const confirmPassword =
-          document.getElementById("confirm_password").value;
+        const confirmPassword = document.getElementById("confirm_password").value;
         const email = document.getElementById("new_email").value.trim();
         const phone = document.getElementById("new_phone").value.trim();
 
         // Clear previous errors
-        [
-          "new_username",
-          "new_password",
-          "confirm_password",
-          "new_email",
-          "new_phone",
-        ].forEach((id) => {
+        ["new_username", "new_password", "confirm_password", "new_email", "new_phone"].forEach(function(id) {
           const errorDiv = document.getElementById(id + "_error");
           if (errorDiv) errorDiv.classList.add("d-none");
           const field = document.getElementById(id);
@@ -950,20 +885,16 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
         if (errors.length > 0) {
           e.preventDefault();
-          alert(
-            "❌ Please fix the following errors:\n\n• " + errors.join("\n• ")
-          );
+          alert("❌ Please fix the following errors:\n\n• " + errors.join("\n• "));
           return false;
         }
       });
     }
 
     // Edit User Form Validation
-    const editForm = document.querySelector(
-      'form[action*="user_management_edit"]'
-    );
+    const editForm = document.querySelector('form[action*="user_management_edit"]');
     if (editForm) {
-      editForm.addEventListener("submit", function (e) {
+      editForm.addEventListener("submit", function(e) {
         if (!validateEditForm()) {
           e.preventDefault();
           return false;
@@ -972,20 +903,14 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     }
 
     // Change Password Form Validation
-    const passwordForm = document.querySelector(
-      'form[action*="user_management_password"]'
-    );
+    const passwordForm = document.querySelector('form[action*="user_management_password"]');
     if (passwordForm) {
-      passwordForm.addEventListener("submit", function (e) {
+      passwordForm.addEventListener("submit", function(e) {
         const errors = [];
 
         const userId = document.getElementById("pwd_user_id").value;
-        const newPassword = document.getElementById(
-          "new_password_change"
-        ).value;
-        const confirmPassword = document.getElementById(
-          "confirm_password_change"
-        ).value;
+        const newPassword = document.getElementById("new_password_change").value;
+        const confirmPassword = document.getElementById("confirm_password_change").value;
 
         if (!userId) {
           errors.push("Please select a user");
@@ -1000,9 +925,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
         if (errors.length > 0) {
           e.preventDefault();
-          alert(
-            "❌ Please fix the following errors:\n\n• " + errors.join("\n• ")
-          );
+          alert("❌ Please fix the following errors:\n\n• " + errors.join("\n• "));
           return false;
         }
       });
@@ -1019,26 +942,17 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
       { id: "edit_username", validator: validateUsername },
       { id: "edit_email", validator: validateEmail },
       { id: "edit_phone", validator: validatePhone },
-      { id: "edit_laptop", validator: (v) => validateAssetField(v, "Laptop") },
-      {
-        id: "edit_charger",
-        validator: (v) => validateAssetField(v, "Charger"),
-      },
-      {
-        id: "edit_keyboard",
-        validator: (v) => validateAssetField(v, "Keyboard"),
-      },
-      { id: "edit_mouse", validator: (v) => validateAssetField(v, "Mouse") },
-      {
-        id: "edit_headset",
-        validator: (v) => validateAssetField(v, "Headset"),
-      },
+      { id: "edit_laptop", validator: function(v) { return validateAssetField(v, "Laptop"); } },
+      { id: "edit_charger", validator: function(v) { return validateAssetField(v, "Charger"); } },
+      { id: "edit_keyboard", validator: function(v) { return validateAssetField(v, "Keyboard"); } },
+      { id: "edit_mouse", validator: function(v) { return validateAssetField(v, "Mouse"); } },
+      { id: "edit_headset", validator: function(v) { return validateAssetField(v, "Headset"); } },
     ];
 
-    editFields.forEach((field) => {
+    editFields.forEach(function(field) {
       const element = document.getElementById(field.id);
       if (element) {
-        element.addEventListener("blur", function () {
+        element.addEventListener("blur", function() {
           const error = field.validator(this.value.trim());
           if (error) {
             showFieldError(field.id, error);
@@ -1047,7 +961,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
           }
         });
 
-        element.addEventListener("input", function () {
+        element.addEventListener("input", function() {
           const errorDiv = document.getElementById(field.id + "_error");
           if (errorDiv && !errorDiv.classList.contains("d-none")) {
             const error = field.validator(this.value.trim());
@@ -1062,7 +976,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     // Create form real-time validation
     const newUsername = document.getElementById("new_username");
     if (newUsername) {
-      newUsername.addEventListener("blur", function () {
+      newUsername.addEventListener("blur", function() {
         const error = validateUsername(this.value.trim());
         if (error) showFieldError("new_username", error);
         else clearFieldError("new_username");
@@ -1071,7 +985,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
     const newEmail = document.getElementById("new_email");
     if (newEmail) {
-      newEmail.addEventListener("blur", function () {
+      newEmail.addEventListener("blur", function() {
         const error = validateEmail(this.value.trim());
         if (error) showFieldError("new_email", error);
         else clearFieldError("new_email");
@@ -1080,7 +994,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
     const newPhone = document.getElementById("new_phone");
     if (newPhone) {
-      newPhone.addEventListener("blur", function () {
+      newPhone.addEventListener("blur", function() {
         const error = validatePhone(this.value.trim());
         if (error) showFieldError("new_phone", error);
         else clearFieldError("new_phone");
@@ -1092,7 +1006,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     const confirmPassword = document.getElementById("confirm_password");
 
     if (newPassword) {
-      newPassword.addEventListener("input", function () {
+      newPassword.addEventListener("input", function() {
         const error = validatePassword(this.value);
         if (error) showFieldError("new_password", error);
         else clearFieldError("new_password");
@@ -1108,7 +1022,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
     }
 
     if (confirmPassword) {
-      confirmPassword.addEventListener("input", function () {
+      confirmPassword.addEventListener("input", function() {
         if (newPassword && this.value !== newPassword.value) {
           showFieldError("confirm_password", "Passwords do not match");
         } else {
@@ -1119,23 +1033,18 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
 
     // Change password form validation
     const newPasswordChange = document.getElementById("new_password_change");
-    const confirmPasswordChange = document.getElementById(
-      "confirm_password_change"
-    );
+    const confirmPasswordChange = document.getElementById("confirm_password_change");
 
     if (newPasswordChange && confirmPasswordChange) {
-      newPasswordChange.addEventListener("input", function () {
-        if (
-          confirmPasswordChange.value &&
-          this.value !== confirmPasswordChange.value
-        ) {
+      newPasswordChange.addEventListener("input", function() {
+        if (confirmPasswordChange.value && this.value !== confirmPasswordChange.value) {
           confirmPasswordChange.style.borderColor = "var(--red)";
         } else {
           confirmPasswordChange.style.borderColor = "";
         }
       });
 
-      confirmPasswordChange.addEventListener("input", function () {
+      confirmPasswordChange.addEventListener("input", function() {
         if (this.value !== newPasswordChange.value) {
           this.style.borderColor = "var(--red)";
         } else {
@@ -1146,7 +1055,7 @@ Management', 'Manage users, roles, and credentials', 'admin_panel_settings') }}
   }
 
   // Close modal on escape key, but confirm first if there's data
-  document.addEventListener("keydown", function (event) {
+  document.addEventListener("keydown", function(event) {
     if (event.key === "Escape") {
       const editModal = document.getElementById("editModal");
       if (editModal && editModal.classList.contains("active")) {

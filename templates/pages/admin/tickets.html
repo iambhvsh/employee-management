@@ -79,16 +79,17 @@ header('Ticket Management', 'Review and manage employee tickets',
   </form>
 </div>
 
+<script id="groups-data" type="application/json">{{ groups|tojson }}</script>
 <script>
-  const groups = {{ groups|tojson }};
+  const TICKET_GROUPS = JSON.parse(document.getElementById('groups-data').textContent);
   const groupSelectAdmin = document.getElementById('groupSelectAdmin');
   const itemSelectAdmin = document.getElementById('itemSelectAdmin');
 
   function populateAdminItems() {
     const g = groupSelectAdmin.value;
     itemSelectAdmin.innerHTML = '<option value="">Select an item</option>';
-    if (g && groups[g]) {
-      groups[g].forEach(it => {
+    if (g && TICKET_GROUPS[g]) {
+      TICKET_GROUPS[g].forEach(it => {
         const o = document.createElement('option');
         o.value = it;
         o.text = it;
