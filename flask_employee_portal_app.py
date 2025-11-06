@@ -359,7 +359,7 @@ def index():
 
 # Authentication routes
 @app.route("/login", methods=["GET", "POST"])
-def login():
+def login() -> Union[Response, str]:
     """Handle user authentication with role-based redirection"""
     admins: List[str] = [u.username for u in User.query.filter_by(is_admin=True).all()]
     employees: List[str] = [u.username for u in User.query.filter_by(is_admin=False).all()]
