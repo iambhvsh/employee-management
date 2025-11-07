@@ -46,11 +46,15 @@ function createThemeToggle() {
   }
 
   // Append to header-actions instead of body
+  const customHost = document.querySelector(".theme-toggle-host");
   const headerActions = document.querySelector(".header-actions");
-  if (headerActions) {
+
+  if (customHost) {
+    customHost.appendChild(toggle);
+  } else if (headerActions) {
     headerActions.appendChild(toggle);
   } else {
-    // Fallback to body if header-actions doesn't exist
+    // Fallback to body if no host container exists
     document.body.appendChild(toggle);
   }
 }
@@ -228,16 +232,17 @@ function isValidPhone(phone) {
 // Convert plain status text to styled badge components
 function initStatusBadges() {
   const statusCells = document.querySelectorAll("td");
+  const cfg = (window.APP_CONFIG && window.APP_CONFIG.statusBadges) || [];
+  const cfgLower = cfg.map((s) => String(s).toLowerCase());
 
   statusCells.forEach((cell) => {
-    const text = cell.textContent.trim().toLowerCase();
-
-    if (text === "pending") {
-      cell.innerHTML = `<span class="status-badge status-pending">Pending</span>`;
-    } else if (text === "approved") {
-      cell.innerHTML = `<span class="status-badge status-approved">Approved</span>`;
-    } else if (text === "rejected") {
-      cell.innerHTML = `<span class="status-badge status-rejected">Rejected</span>`;
+    const raw = cell.textContent.trim();
+    const text = raw.toLowerCase();
+    const idx = cfgLower.indexOf(text);
+    if (idx !== -1) {
+      const display = cfg[idx];
+      const cls = `status-${text}`;
+      cell.innerHTML = `<span class="status-badge ${cls}">${display}</span>`;
     }
   });
 }

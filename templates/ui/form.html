@@ -14,10 +14,10 @@
 <label>{{ label }}</label>
 <textarea 
   name="{{ name }}" 
+  rows="{{ rows }}"
   {% if readonly %}readonly{% endif %}
   {% if required %}required{% endif %}
   {% if placeholder %}placeholder="{{ placeholder }}"{% endif %}
-  style="min-height: {{ rows * 30 }}px"
 >{{ value }}</textarea>
 {% endmacro %}
 

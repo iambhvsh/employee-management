@@ -79,23 +79,33 @@ header('Raise a Ticket', 'Report issues or request assistance') }}
 </div>
 {% endif %}
 
+<script type="application/json" id="ticket-data">{{ {"groups": groups}|tojson }}</script>
+
 <script>
-  const groups = {{ groups | tojson }};
+  const ticketDataElement = document.getElementById('ticket-data');
+  const ticketData = ticketDataElement ? JSON.parse(ticketDataElement.textContent || '{}') : {};
+  const groups = ticketData.groups && typeof ticketData.groups === 'object' ? ticketData.groups : {};
   const groupSelect = document.getElementById('groupSelect');
   const itemSelect = document.getElementById('itemSelect');
 
   function populateItems() {
+    if (!groupSelect || !itemSelect) {
+      return;
+    }
+
     const g = groupSelect.value;
     itemSelect.innerHTML = '';
-    (groups[g] || []).forEach(it => {
+    (Array.isArray(groups[g]) ? groups[g] : []).forEach(function(it) {
       const opt = document.createElement('option');
       opt.value = it;
-      opt.text = it;
+      opt.textContent = it;
       itemSelect.appendChild(opt);
     });
   }
 
-  groupSelect.addEventListener('change', populateItems);
+  if (groupSelect) {
+    groupSelect.addEventListener('change', populateItems);
+  }
   populateItems();
 </script>
 {% endblock %}

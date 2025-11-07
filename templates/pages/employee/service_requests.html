@@ -68,104 +68,7 @@ block page_content %}
       </div>
     </form>
   </div>
-
-  <!-- Service Request Types Info -->
-  <div
-    class="card"
-    style="
-      background: var(--gray-a2);
-      border-left: 4px solid var(--primary-color);
-    "
-  >
-    <h4 style="margin-top: 0; color: var(--foreground)">
-      <span class="material-symbols-outlined" style="vertical-align: middle"
-        >info</span
-      >
-      Available Service Request Types
-    </h4>
-
-    <div
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-        margin-top: 1rem;
-      "
-    >
-      <!-- DevOps Requests -->
-      <div>
-        <h5 style="color: var(--primary-color); margin-bottom: 0.75rem">
-          <span
-            class="material-symbols-outlined"
-            style="vertical-align: middle; font-size: 1.2rem"
-            >settings</span
-          >
-          DevOps Requests
-        </h5>
-        <ul style="list-style: none; padding: 0; margin: 0">
-          {% for request_type in service_request_types['DevOps'] %}
-          <li
-            style="
-              padding: 0.5rem;
-              margin-bottom: 0.5rem;
-              background: var(--surface);
-              border-radius: 4px;
-              border: 1px solid var(--border);
-            "
-          >
-            <span
-              class="material-symbols-outlined"
-              style="
-                vertical-align: middle;
-                font-size: 1rem;
-                color: var(--primary-color);
-              "
-              >check_circle</span
-            >
-            {{ request_type }}
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-
-      <!-- Developer Requests -->
-      <div>
-        <h5 style="color: var(--success-color); margin-bottom: 0.75rem">
-          <span
-            class="material-symbols-outlined"
-            style="vertical-align: middle; font-size: 1.2rem"
-            >code</span
-          >
-          Developer Requests
-        </h5>
-        <ul style="list-style: none; padding: 0; margin: 0">
-          {% for request_type in service_request_types['Developer'] %}
-          <li
-            style="
-              padding: 0.5rem;
-              margin-bottom: 0.5rem;
-              background: var(--surface);
-              border-radius: 4px;
-              border: 1px solid var(--border);
-            "
-          >
-            <span
-              class="material-symbols-outlined"
-              style="
-                vertical-align: middle;
-                font-size: 1rem;
-                color: var(--success-color);
-              "
-              >check_circle</span
-            >
-            {{ request_type }}
-          </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-
+  
   <!-- My Service Requests History -->
   <h3 class="section-title">
     <span class="material-symbols-outlined">history</span>
@@ -249,33 +152,46 @@ block page_content %}
   {% endif %}
 </div>
 
+<script type="application/json" id="service-request-data">{{ {"types": service_request_types}|tojson }}</script>
+
 <script>
-  // Dynamic request type dropdown based on category
   document.addEventListener('DOMContentLoaded', function() {
+    const dataElement = document.getElementById('service-request-data');
+    const parsed = dataElement ? JSON.parse(dataElement.textContent || '{}') : {};
+    const requestTypes = parsed.types && typeof parsed.types === 'object' ? parsed.types : {};
+
     const categorySelect = document.getElementById('categorySelect');
     const requestTypeSelect = document.getElementById('requestTypeSelect');
 
-    const requestTypes = {{ service_request_types | tojson }};
+    function resetRequestTypes() {
+      if (!requestTypeSelect) {
+        return;
+      }
+      requestTypeSelect.innerHTML = '<option value="">-- Select Request Type --</option>';
+      requestTypeSelect.disabled = true;
+    }
+
+    if (!categorySelect || !requestTypeSelect) {
+      return;
+    }
 
     categorySelect.addEventListener('change', function() {
-      const category = this.value;
-      requestTypeSelect.innerHTML = '<option value="">-- Select Request Type --</option>';
+      const category = categorySelect.value;
+      resetRequestTypes();
 
-      if (category && requestTypes[category]) {
-        requestTypes[category].forEach(function(type) {
+      const list = requestTypes && requestTypes[category];
+      if (Array.isArray(list) && list.length > 0) {
+        list.forEach(function(type) {
           const option = document.createElement('option');
           option.value = type;
           option.textContent = type;
           requestTypeSelect.appendChild(option);
         });
         requestTypeSelect.disabled = false;
-      } else {
-        requestTypeSelect.disabled = true;
       }
     });
 
-    // Initially disable request type select
-    requestTypeSelect.disabled = true;
+    resetRequestTypes();
   });
 </script>
 

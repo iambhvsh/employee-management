@@ -7,23 +7,21 @@
         <div class="brand-icon">
           <span class="material-symbols-outlined">badge</span>
         </div>
-        <span class="brand-text"
-          >{{ config.get('COMPANY_NAME', 'Employee Portal') }}</span
-        >
+        <span class="brand-text">{{ CONFIG["COMPANY_NAME"] }}</span>
       </div>
     </div>
 
     <nav class="sidebar-nav">
       {% if current_user.is_admin %}
       <div class="nav-section">
-        <span class="nav-section-title">Admin</span>
+        <span class="nav-section-title">{{ CONFIG["LABELS"]["SIDEBAR_SECTION_ADMIN"] }}</span>
         <a
           href="{{ url_for('admin_dashboard') }}"
           class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}"
           title="Dashboard"
         >
           <span class="material-symbols-outlined">dashboard</span>
-          <span class="nav-text">Dashboard</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_DASHBOARD"] }}</span>
         </a>
         <a
           href="{{ url_for('admin_employee_details') }}"
@@ -31,7 +29,7 @@
           title="Employees"
         >
           <span class="material-symbols-outlined">group</span>
-          <span class="nav-text">Employees</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_EMPLOYEES"] }}</span>
         </a>
         <a
           href="{{ url_for('admin_employees') }}"
@@ -39,7 +37,7 @@
           title="Manage"
         >
           <span class="material-symbols-outlined">settings</span>
-          <span class="nav-text">Manage</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_MANAGE"] }}</span>
         </a>
         <a
           href="{{ url_for('user_management') }}"
@@ -47,7 +45,7 @@
           title="User Management"
         >
           <span class="material-symbols-outlined">admin_panel_settings</span>
-          <span class="nav-text">User Management</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_USER_MANAGEMENT"] }}</span>
         </a>
         <a
           href="{{ url_for('admin_tickets') }}"
@@ -55,7 +53,7 @@
           title="Tickets"
         >
           <span class="material-symbols-outlined">confirmation_number</span>
-          <span class="nav-text">Tickets</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_TICKETS"] }}</span>
         </a>
         <a
           href="{{ url_for('admin_service_requests') }}"
@@ -63,7 +61,7 @@
           title="Service Requests"
         >
           <span class="material-symbols-outlined">support_agent</span>
-          <span class="nav-text">Service Requests</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_SERVICE_REQUESTS"] }}</span>
         </a>
         <a
           href="{{ url_for('admin_github_access') }}"
@@ -71,19 +69,19 @@
           title="GitHub Access"
         >
           <span class="material-symbols-outlined">code</span>
-          <span class="nav-text">GitHub Access</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_GITHUB_ACCESS"] }}</span>
         </a>
       </div>
       {% else %}
       <div class="nav-section">
-        <span class="nav-section-title">Employee</span>
+        <span class="nav-section-title">{{ CONFIG["LABELS"]["SIDEBAR_SECTION_EMPLOYEE"] }}</span>
         <a
           href="{{ url_for('employee_details') }}"
           class="nav-link {% if request.endpoint == 'employee_details' %}active{% endif %}"
           title="My Details"
         >
           <span class="material-symbols-outlined">person</span>
-          <span class="nav-text">My Details</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_MY_DETAILS"] }}</span>
         </a>
         <a
           href="{{ url_for('employee_raise') }}"
@@ -91,7 +89,7 @@
           title="Raise Ticket"
         >
           <span class="material-symbols-outlined">add_circle</span>
-          <span class="nav-text">Raise Ticket</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_RAISE_TICKET"] }}</span>
         </a>
         <a
           href="{{ url_for('employee_service_requests') }}"
@@ -99,7 +97,7 @@
           title="Service Requests"
         >
           <span class="material-symbols-outlined">support</span>
-          <span class="nav-text">Service Requests</span>
+          <span class="nav-text">{{ CONFIG["LABELS"]["NAV_SERVICE_REQUESTS"] }}</span>
         </a>
       </div>
       {% endif %}
@@ -114,13 +112,13 @@
         <div class="user-info">
           <span class="user-name">{{ current_user.username }}</span>
           {% if current_user.is_admin %}
-          <span class="user-role">Admin</span>
+          <span class="user-role">{{ CONFIG["LABELS"]["SIDEBAR_SECTION_ADMIN"] }}</span>
           {% else %}
-          <span class="user-role">Employee</span>
+          <span class="user-role">{{ CONFIG["LABELS"]["SIDEBAR_SECTION_EMPLOYEE"] }}</span>
           {% endif %}
         </div>
       </div>
-      <a href="{{ url_for('logout') }}" class="logout-btn" title="Sign Out">
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="{{ CONFIG["LABELS"]["NAV_SIGN_OUT"] }}">
         <span class="material-symbols-outlined">logout</span>
       </a>
       {% endif %}
@@ -139,14 +137,14 @@
       <div class="header-brand-icon">
         <span class="material-symbols-outlined">badge</span>
       </div>
-      <span class="header-brand-text">Employee Portal</span>
+      <span class="header-brand-text">{{ CONFIG["COMPANY_NAME"] }}</span>
     </div>
     <div class="header-spacer"></div>
-    <div class="header-actions">
+    <div class="header-actions theme-toggle-host">
       {% if current_user.is_authenticated %}
       <a href="{{ url_for('logout') }}" class="header-logout">
         <span class="material-symbols-outlined">logout</span>
-        <span>Sign Out</span>
+        <span>{{ CONFIG["LABELS"]["NAV_SIGN_OUT"] }}</span>
       </a>
       {% endif %}
     </div>

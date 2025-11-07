@@ -1,7 +1,6 @@
 """Flask Employee Portal - Role-based access system"""
-
-# Core imports for Flask web framework, authentication, validation, and security
 from flask import Flask, render_template, request, redirect, url_for, flash, abort
+from flask.typing import ResponseReturnValue
 from flask.wrappers import Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import (
@@ -18,6 +17,7 @@ import json
 import re
 import logging
 from functools import wraps
+from config import CONFIG
 
 # Type variables for decorator typing
 P = ParamSpec('P')
@@ -36,9 +36,9 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'super_secret_key_change
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Company configuration
-COMPANY_NAME = os.environ.get('COMPANY_NAME', 'Employee Portal')
+COMPANY_NAME = CONFIG.get('COMPANY_NAME', 'Employee Portal')
 app.config['COMPANY_NAME'] = COMPANY_NAME
+app.jinja_env.globals['CONFIG'] = CONFIG
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
@@ -51,7 +51,7 @@ app.config['SESSION_COOKIE_SECURE'] = False
 app.config['REMEMBER_COOKIE_SECURE'] = False
 
 # Initialize database, CSRF protection, and login manager
-db = SQLAlchemy(app)
+db: SQLAlchemy = SQLAlchemy(app)
 csrf = CSRFProtect(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
@@ -212,8 +212,8 @@ def sanitize_input(input_str: str, max_length: int = 1000) -> str:
 
 
 def validate_ticket_status(status: str) -> bool:
-    """Validate ticket status is one of the allowed values"""
-    return status in ['Pending', 'Approved', 'Rejected']
+    allowed = set(CONFIG.get('TICKET_STATUSES', []))
+    return status in allowed
 
 
 # Custom decorator to restrict routes to admin users only
@@ -229,19 +229,8 @@ def admin_required(f: Callable[P, T]) -> Callable[P, T]:
     return cast(Callable[P, T], decorated_function)
 
 
-# Predefined ticket categories for structured issue tracking
-TICKET_GROUPS = {
-    "ITEMS": ["KEYBOARD", "MOUSE", "LAPTOP ISSUE", "CHARGER", "HEADSET", "RAM CHANGE", "SCREEN ISSUE", "KEYPAD ISSUE", "TOUCHPAD ISSUE"],
-    "ACCESS": ["VPN ACCESS", "EMAIL ACCESS", "BIOMETRIC ACCESS"],
-    "ISSUES": ["SOFTWARE ISSUE", "NETWORK ISSUE", "PERFORMANCE ISSUE"],
-    "OTHER": ["OTHER"]
-}
-
-# Service request categories and types
-SERVICE_REQUEST_TYPES = {
-    "DevOps": ["Add Port", "Add VPN", "Add Route", "Add Firewall"],
-    "Developer": ["GitHub Access Request"]
-}
+TICKET_GROUPS = CONFIG.get('TICKET_GROUPS', {})
+SERVICE_REQUEST_TYPES = CONFIG.get('SERVICE_REQUEST_TYPES', {})
 
 
 # Database models
@@ -359,7 +348,7 @@ def index():
 
 # Authentication routes
 @app.route("/login", methods=["GET", "POST"])
-def login() -> Union[Response, str]:
+def login() -> ResponseReturnValue:
     """Handle user authentication with role-based redirection"""
     admins: List[str] = [u.username for u in User.query.filter_by(is_admin=True).all()]
     employees: List[str] = [u.username for u in User.query.filter_by(is_admin=False).all()]
@@ -420,13 +409,12 @@ def login() -> Union[Response, str]:
                          admins=admins, 
                          employees=employees, 
                          departments=departments,
-                         employee_departments=employee_departments,
-                         company_name=COMPANY_NAME)
+                         employee_departments=employee_departments)
 
 
 @app.route("/logout")
 @login_required
-def logout() -> Response:
+def logout() -> ResponseReturnValue:
     logout_user()
     flash("You’ve been logged out successfully.", "success")
     return redirect(url_for("login"))
@@ -434,7 +422,7 @@ def logout() -> Response:
 
 @app.route('/employee/dashboard')
 @login_required
-def employee_dashboard_redirect() -> Response:
+def employee_dashboard_redirect() -> ResponseReturnValue:
     if current_user.is_admin:
         return redirect(url_for('admin_dashboard'))
     return redirect(url_for('employee_details'))
@@ -443,7 +431,7 @@ def employee_dashboard_redirect() -> Response:
 # Employee area routes
 @app.route('/employee/details', methods=['GET', 'POST'])
 @login_required
-def employee_details() -> Union[Response, str]:
+def employee_details() -> ResponseReturnValue:
     """Employee profile management with one-time edit restriction"""
     if current_user.is_admin:
         flash('Admins cannot use employee details view', 'error')
@@ -513,7 +501,7 @@ def employee_details() -> Union[Response, str]:
 
 @app.route('/employee/raise', methods=['GET', 'POST'])
 @login_required
-def employee_raise() -> Union[Response, str]:
+def employee_raise() -> ResponseReturnValue:
     if current_user.is_admin:
         flash('Admins cannot raise employee tickets here', 'error')
         return redirect(url_for('admin_dashboard'))
@@ -523,7 +511,8 @@ def employee_raise() -> Union[Response, str]:
             # Validate ticket data with Pydantic
             ticket_data = TicketCreate(
                 item=request.form.get('item', ''),
-                reason=request.form.get('reason', '')
+                reason=request.form.get('reason', ''),
+                employee_id=current_user.id
             )
 
             ticket = Ticket(
@@ -556,7 +545,7 @@ def employee_raise() -> Union[Response, str]:
 
 @app.route('/employee/service-requests', methods=['GET', 'POST'])
 @login_required
-def employee_service_requests() -> Union[Response, str]:
+def employee_service_requests() -> ResponseReturnValue:
     """Employee service requests page - handle DevOps and Developer requests"""
     if current_user.is_admin:
         flash('Admins cannot access employee service requests', 'error')
@@ -568,7 +557,8 @@ def employee_service_requests() -> Union[Response, str]:
             service_request_data = ServiceRequestCreate(
                 category=request.form.get('category', ''),
                 request_type=request.form.get('request_type', ''),
-                details=request.form.get('details', '')
+                details=request.form.get('details', ''),
+                employee_id=current_user.id
             )
 
             service_request = ServiceRequest(
@@ -630,7 +620,7 @@ def admin_dashboard() -> str:
 @app.route('/admin/employees', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def admin_employee_details() -> Union[Response, str]:
+def admin_employee_details() -> ResponseReturnValue:
     if request.method == 'POST':
         uid = request.form.get('user_id')
         if not uid:
@@ -652,9 +642,13 @@ def admin_employee_details() -> Union[Response, str]:
                 keyboard=request.form.get('keyboard'),
                 mouse=request.form.get('mouse'),
                 headset=request.form.get('headset'),
+                more_device=request.form.get('more_device'),
+                bags=request.form.get('bags'),
                 vpn_access=bool(request.form.get('vpn_access')),
                 email_access=bool(request.form.get('email_access')),
-                biometric_access=bool(request.form.get('biometric_access'))
+                biometric_access=bool(request.form.get('biometric_access')),
+                floor_level_1=bool(request.form.get('floor_level_1')),
+                floor_level_2=bool(request.form.get('floor_level_2'))
             )
             # Update employee information
             user.phone = details.phone
@@ -694,7 +688,7 @@ def admin_employee_details() -> Union[Response, str]:
 @app.route('/admin/employees/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def admin_employees() -> Union[Response, str]:
+def admin_employees() -> ResponseReturnValue:
     if request.method == 'POST':
         uid = request.form.get('user_id')
         if not uid:
@@ -716,9 +710,13 @@ def admin_employees() -> Union[Response, str]:
                 keyboard=request.form.get('keyboard'),
                 mouse=request.form.get('mouse'),
                 headset=request.form.get('headset'),
+                more_device=request.form.get('more_device'),
+                bags=request.form.get('bags'),
                 vpn_access=bool(request.form.get('vpn_access')),
                 email_access=bool(request.form.get('email_access')),
-                biometric_access=bool(request.form.get('biometric_access'))
+                biometric_access=bool(request.form.get('biometric_access')),
+                floor_level_1=bool(request.form.get('floor_level_1')),
+                floor_level_2=bool(request.form.get('floor_level_2'))
             )
             # Update employee information
             user.phone = details.phone
@@ -784,7 +782,7 @@ def admin_tickets() -> str:
 @app.route('/admin/raise', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def admin_raise() -> Union[Response, str]:
+def admin_raise() -> ResponseReturnValue:
     employees: List[User] = User.query.filter_by(is_admin=False).all()
     if request.method == 'POST':
         try:
@@ -836,7 +834,7 @@ def admin_raise() -> Union[Response, str]:
 @app.route('/admin/ticket/<int:ticket_id>/approve', methods=['POST'])
 @login_required
 @admin_required
-def admin_approve(ticket_id: int) -> Response:
+def admin_approve(ticket_id: int) -> ResponseReturnValue:
     try:
         ticket = Ticket.query.get_or_404(ticket_id)
         if not validate_ticket_status(ticket.status):
@@ -858,7 +856,7 @@ def admin_approve(ticket_id: int) -> Response:
 @app.route('/admin/ticket/<int:ticket_id>/reject', methods=['POST'])
 @login_required
 @admin_required
-def admin_reject(ticket_id: int) -> Response:
+def admin_reject(ticket_id: int) -> ResponseReturnValue:
     try:
         ticket = Ticket.query.get_or_404(ticket_id)
         if not validate_ticket_status(ticket.status):
@@ -893,7 +891,7 @@ def admin_service_requests() -> str:
 @app.route('/admin/service-request/<int:request_id>/approve', methods=['POST'])
 @login_required
 @admin_required
-def admin_approve_service_request(request_id: int) -> Response:
+def admin_approve_service_request(request_id: int) -> ResponseReturnValue:
     """Approve a service request"""
     try:
         service_request = ServiceRequest.query.get_or_404(request_id)
@@ -912,7 +910,7 @@ def admin_approve_service_request(request_id: int) -> Response:
 @app.route('/admin/service-request/<int:request_id>/reject', methods=['POST'])
 @login_required
 @admin_required
-def admin_reject_service_request(request_id: int) -> Response:
+def admin_reject_service_request(request_id: int) -> ResponseReturnValue:
     """Reject a service request"""
     try:
         service_request = ServiceRequest.query.get_or_404(request_id)
@@ -931,7 +929,7 @@ def admin_reject_service_request(request_id: int) -> Response:
 @app.route('/admin/service-request/<int:request_id>/revoke', methods=['POST'])
 @login_required
 @admin_required
-def admin_revoke_service_request(request_id: int) -> Response:
+def admin_revoke_service_request(request_id: int) -> ResponseReturnValue:
     """Revoke a previously approved service request"""
     try:
         service_request = ServiceRequest.query.get_or_404(request_id)
@@ -996,7 +994,7 @@ def user_management() -> str:
 @app.route('/admin/users/create', methods=['POST'])
 @login_required
 @admin_required
-def user_management_create() -> Response:
+def user_management_create() -> ResponseReturnValue:
     """Create new user with validation"""
     try:
         username = sanitize_input(request.form.get('username', '').strip())
@@ -1051,7 +1049,7 @@ def user_management_create() -> Response:
 @app.route('/admin/users/edit', methods=['POST'])
 @login_required
 @admin_required
-def user_management_edit() -> Response:
+def user_management_edit() -> ResponseReturnValue:
     """Edit existing user details including contact, assets, and access"""
     try:
         user_id = request.form.get('user_id')
@@ -1140,7 +1138,7 @@ def user_management_edit() -> Response:
 @app.route('/admin/users/delete', methods=['POST'])
 @login_required
 @admin_required
-def user_management_delete() -> Response:
+def user_management_delete() -> ResponseReturnValue:
     """Delete user with safety checks"""
     try:
         user_id = request.form.get('user_id')
@@ -1179,7 +1177,7 @@ def user_management_delete() -> Response:
 @app.route('/admin/users/password', methods=['POST'])
 @login_required
 @admin_required
-def user_management_password() -> Response:
+def user_management_password() -> ResponseReturnValue:
     """Change password for any user"""
     try:
         user_id = request.form.get('user_id')
@@ -1221,7 +1219,7 @@ def user_management_password() -> Response:
 @app.route('/admin/github-access', methods=['GET'])
 @login_required
 @admin_required
-def admin_github_access() -> Union[Response, str]:
+def admin_github_access() -> ResponseReturnValue:
     """Admin view for managing GitHub repository access"""
     # Get all GitHub access records with employee information
     access_records = db.session.query(GitHubRepoAccess, User).join(User).order_by(GitHubRepoAccess.created_at.desc()).all()
@@ -1238,7 +1236,7 @@ def admin_github_access() -> Union[Response, str]:
 @app.route('/admin/github-access/grant', methods=['POST'])
 @login_required
 @admin_required
-def admin_grant_github_access() -> Response:
+def admin_grant_github_access() -> ResponseReturnValue:
     """Grant GitHub repository access to an employee"""
     try:
         employee_id = request.form.get('employee_id')
@@ -1287,7 +1285,7 @@ def admin_grant_github_access() -> Response:
 @app.route('/admin/github-access/revoke/<int:access_id>', methods=['POST'])
 @login_required
 @admin_required
-def admin_revoke_github_access(access_id: int) -> Response:
+def admin_revoke_github_access(access_id: int) -> ResponseReturnValue:
     """Revoke GitHub repository access"""
     try:
         access = GitHubRepoAccess.query.get(access_id)
@@ -1318,31 +1316,33 @@ def admin_revoke_github_access(access_id: int) -> Response:
 def bootstrap() -> None:
     db.create_all()
 
-    if not User.query.filter_by(username="Tajuddin.S").first():
-        admin = User(username="Tajuddin.S", is_admin=True)
-        admin.set_password("Admin@123")
-        db.session.add(admin)
-        print("Created default admin user")
+    users_cfg = CONFIG.get('USERS', [])
+    created = 0
+    for u in users_cfg:
+        username = u.get('name')
+        if not username:
+            continue
+        if User.query.filter_by(username=username).first():
+            continue
+        is_admin = bool(u.get('Admin', False))
+        user = User(username=username, is_admin=is_admin)
+        user.department = u.get('department')
+        user.email = u.get('email') or None
+        user.phone = u.get('phone') or None
+        assets = u.get('assets', {})
+        user.laptop = assets.get('laptop') or None
+        user.charger = assets.get('charger') or None
+        user.keyboard = assets.get('keyboard') or None
+        user.mouse = assets.get('mouse') or None
+        user.headset = assets.get('headset') or None
+        pw = u.get('password', '')
+        if pw:
+            user.set_password(pw)
+        db.session.add(user)
+        created += 1
 
-    # Employees with departments
-    employees = [
-        ("MohanTeja", "Engineering"),
-        ("Hari", "Engineering"),
-        ("Aparna", "HR"),
-        ("Ramu", "Operations"),
-        ("Sai Prasanth", "Engineering")
-    ]
-    employees_created = 0
-    for username, department in employees:
-        if not User.query.filter_by(username=username).first():
-            emp = User(username=username, is_admin=False)
-            emp.department = department
-            emp.set_password("Ckompare")
-            db.session.add(emp)
-            employees_created += 1
-
-    if employees_created > 0:
-        print(f"Added {employees_created} employee(s)")
+    if created:
+        print(f"Added {created} user(s) from config")
 
     db.session.commit()
 

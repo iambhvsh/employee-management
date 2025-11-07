@@ -2420,12 +2420,24 @@ textarea/* Accessibility - Keyboard Navigation Focus States */
 /* Login Page Styles */
 
 .login-body {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   background: var(--background, #f5f7fa);
   padding: 20px;
+}
+
+.login-theme-toggle {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 10;
+}
+
+.login-theme-toggle .theme-toggle {
+  margin-left: 0;
 }
 
 .login-wrapper {
@@ -2577,30 +2589,6 @@ textarea/* Accessibility - Keyboard Navigation Focus States */
   cursor: not-allowed;
   opacity: 0.6;
   box-shadow: none;
-}
-
-.login-wrapper .flash {
-  margin-bottom: 20px;
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid;
-  font-weight: 500;
-}
-
-.login-wrapper .flash.success {
-  background: var(--green-a2);
-  border-color: var(--green-a6);
-  color: var(--green-11);
-}
-
-.login-wrapper .flash.error {
-  background: var(--red-a2);
-  border-color: var(--red-a6);
-  color: var(--red-11);
 }
 
 @media (max-width: 480px) {

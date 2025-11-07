@@ -4,7 +4,7 @@
     <!-- Base template: Core meta tags, fonts, and styles -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Employee Portal{% endblock %}</title>
+    <title>{% block title %}{{ CONFIG["COMPANY_NAME"] }}{% endblock %}</title>
 
     <!-- Inline script to prevent theme flash - runs before page render -->
     <script>
@@ -29,7 +29,7 @@
       href="{{ url_for('static', filename='styles.css') }}?v={{ range(1, 999999) | random }}"
     />
   </head>
-  <body>
+  <body class="{% block body_class %}{% endblock %}">
     <!-- Flash notification system -->
     {% with messages = get_flashed_messages(with_categories=true) %} {% if
     messages %}
@@ -40,6 +40,28 @@
     </div>
     {% endif %} {% endwith %} {% block content %}{% endblock %}
 
+    <script type="application/json" id="app-config-data">{{ {
+      "statusBadges": CONFIG["TICKET_STATUSES"]
+    } | tojson }}</script>
+
+    <script>
+      (function() {
+        const configElement = document.getElementById("app-config-data");
+        if (!configElement) {
+          return;
+        }
+        try {
+          const parsed = JSON.parse(configElement.textContent || "{}");
+          const statusBadges = parsed && typeof parsed === "object" ? parsed.statusBadges : null;
+          if (statusBadges) {
+            window.APP_CONFIG = window.APP_CONFIG || {};
+            window.APP_CONFIG.statusBadges = statusBadges;
+          }
+        } catch (error) {
+          console.error("Failed to parse app config", error);
+        }
+      })();
+    </script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
   </body>
 </html>

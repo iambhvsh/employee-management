@@ -50,16 +50,21 @@
         <td>
           <div class="action-buttons">
             <button
-              class="btn btn-secondary btn-sm"
-              onclick="editUser({{ admin.id }}, '{{ admin.username }}', {{ admin.is_admin|tojson }})"
+              type="button"
+              class="btn btn-secondary btn-sm js-edit-user"
+              data-user-id="{{ admin.id }}"
+              data-username="{{ admin.username|e }}"
+              data-is-admin="{{ 'true' if admin.is_admin else 'false' }}"
             >
               <span class="material-symbols-outlined">edit</span>
               <span class="btn-text">Edit</span>
             </button>
             {% if admin.id != current_user.id %}
             <button
-              class="btn btn-danger btn-sm"
-              onclick="confirmDelete({{ admin.id }}, '{{ admin.username }}')"
+              type="button"
+              class="btn btn-danger btn-sm js-delete-user"
+              data-user-id="{{ admin.id }}"
+              data-username="{{ admin.username|e }}"
             >
               <span class="material-symbols-outlined">delete</span>
               <span class="btn-text">Delete</span>
@@ -106,24 +111,25 @@
         <td>{{ emp.email or '—' }}</td>
         <td>{{ emp.phone or '—' }}</td>
         <td>
-          {% if emp.details_filled %}
-          <span class="status-badge status-approved">Complete</span>
-          {% else %}
-          <span class="status-badge status-pending">Incomplete</span>
-          {% endif %}
+          <span class="status-badge status-approved">Completed</span>
         </td>
         <td>
           <div class="action-buttons">
             <button
-              class="btn btn-secondary btn-sm"
-              onclick="editUser({{ emp.id }}, '{{ emp.username }}', {{ emp.is_admin|tojson }})"
+              type="button"
+              class="btn btn-secondary btn-sm js-edit-user"
+              data-user-id="{{ emp.id }}"
+              data-username="{{ emp.username|e }}"
+              data-is-admin="{{ 'true' if emp.is_admin else 'false' }}"
             >
               <span class="material-symbols-outlined">edit</span>
               <span class="btn-text">Edit</span>
             </button>
             <button
-              class="btn btn-danger btn-sm"
-              onclick="confirmDelete({{ emp.id }}, '{{ emp.username }}')"
+              type="button"
+              class="btn btn-danger btn-sm js-delete-user"
+              data-user-id="{{ emp.id }}"
+              data-username="{{ emp.username|e }}"
             >
               <span class="material-symbols-outlined">delete</span>
               <span class="btn-text">Delete</span>
@@ -242,18 +248,18 @@
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
     <label>Select User <span class="required-asterisk">*</span></label>
-    <select id="pwd_user_id" name="user_id" required onchange="updatePasswordInfo(this)">
+    <select id="pwd_user_id" name="user_id" required class="js-password-select">
       <option value="">Choose User</option>
       <optgroup label="Administrators">
         {% for admin in admins %}
-        <option value="{{ admin.id }}" data-username="{{ admin.username }}">
+        <option value="{{ admin.id }}" data-username="{{ admin.username|e }}">
           {{ admin.username }} (ID: {{ admin.id }})
         </option>
         {% endfor %}
       </optgroup>
       <optgroup label="Employees">
         {% for emp in employees %}
-        <option value="{{ emp.id }}" data-username="{{ emp.username }}">
+        <option value="{{ emp.id }}" data-username="{{ emp.username|e }}">
           {{ emp.username }} (ID: {{ emp.id }})
         </option>
         {% endfor %}
@@ -294,7 +300,7 @@
         <span class="material-symbols-outlined button-icon-sm">lock</span>
         Update Password
       </button>
-      <button type="reset" class="btn-secondary" onclick="hidePasswordInfo()">
+      <button type="reset" class="btn-secondary js-hide-password-info">
         <span class="material-symbols-outlined button-icon-sm">refresh</span>
         Reset
       </button>
@@ -310,7 +316,7 @@
         <span class="material-symbols-outlined">edit</span>
         Edit User
       </h3>
-      <button type="button" onclick="closeEditModal()" class="modal-close-btn">
+      <button type="button" class="modal-close-btn js-close-edit-modal">
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
@@ -469,7 +475,7 @@
           <span class="material-symbols-outlined button-icon-sm">save</span>
           Save Changes
         </button>
-        <button type="button" class="btn-secondary" onclick="attemptCloseEditModal()">
+        <button type="button" class="btn-secondary js-attempt-close-edit">
           <span class="material-symbols-outlined button-icon-sm">close</span>
           Cancel
         </button>
@@ -486,7 +492,7 @@
         <span class="material-symbols-outlined">warning</span>
         Confirm Deletion
       </h3>
-      <button onclick="closeDeleteModal()" class="modal-close-btn">
+      <button class="modal-close-btn js-close-delete-modal">
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
@@ -507,7 +513,7 @@
           <span class="material-symbols-outlined button-icon-sm">delete</span>
           Delete User
         </button>
-        <button type="button" class="btn-secondary" onclick="closeDeleteModal()">
+        <button type="button" class="btn-secondary js-close-delete-modal">
           <span class="material-symbols-outlined button-icon-sm">close</span>
           Cancel
         </button>
@@ -819,6 +825,54 @@
 
   // Form Validation on Submit
   document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll(".js-edit-user").forEach(function(button) {
+      button.addEventListener("click", function() {
+        const userId = parseInt(button.dataset.userId || "0", 10);
+        const username = button.dataset.username || "";
+        const isAdmin = button.dataset.isAdmin === "true";
+        editUser(userId, username, isAdmin);
+      });
+    });
+
+    document.querySelectorAll(".js-delete-user").forEach(function(button) {
+      button.addEventListener("click", function() {
+        const userId = parseInt(button.dataset.userId || "0", 10);
+        const username = button.dataset.username || "";
+        confirmDelete(userId, username);
+      });
+    });
+
+    const passwordSelect = document.querySelector(".js-password-select");
+    if (passwordSelect) {
+      passwordSelect.addEventListener("change", function(event) {
+        updatePasswordInfo(event.currentTarget);
+      });
+    }
+
+    document.querySelectorAll(".js-hide-password-info").forEach(function(button) {
+      button.addEventListener("click", function() {
+        hidePasswordInfo();
+      });
+    });
+
+    document.querySelectorAll(".js-close-edit-modal").forEach(function(button) {
+      button.addEventListener("click", function() {
+        closeEditModal();
+      });
+    });
+
+    document.querySelectorAll(".js-attempt-close-edit").forEach(function(button) {
+      button.addEventListener("click", function() {
+        attemptCloseEditModal();
+      });
+    });
+
+    document.querySelectorAll(".js-close-delete-modal").forEach(function(button) {
+      button.addEventListener("click", function() {
+        closeDeleteModal();
+      });
+    });
+
     // Create User Form Validation
     const createForm = document.querySelector('form[action*="user_management_create"]');
     if (createForm) {
