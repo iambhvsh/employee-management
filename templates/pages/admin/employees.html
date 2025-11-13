@@ -17,7 +17,7 @@ employees %}
     <tbody>
       {% for emp in employees %}
       <tr>
-        <td><strong>{{ emp.username }}</strong></td>
+        <td><strong>{{ emp.name or emp.username }}</strong></td>
         <td>{{ emp.email or '—' }}</td>
         <td>{{ emp.phone or '—' }}</td>
         <td class="employee-laptop-cell">{{ emp.laptop or '—' }}</td>

@@ -37,7 +37,7 @@ access to GitHub repositories') }}
         <option value="">Select an employee</option>
         {% for emp in employees %}
         <option value="{{ emp.id }}">
-          {{ emp.username }}{% if emp.department %} - {{ emp.department }}{%
+          {{ emp.name or emp.username }}{% if emp.department %} - {{ emp.department }}{%
           endif %}
         </option>
         {% endfor %}
@@ -110,7 +110,7 @@ access to GitHub repositories') }}
                 style="font-size: 1.25rem; color: var(--muted-foreground)"
                 >person</span
               >
-              <strong>{{ user.username }}</strong>
+              <strong>{{ user.name or user.username }}</strong>
             </div>
           </td>
           <td>

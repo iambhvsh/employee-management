@@ -30,7 +30,7 @@ view and edit their information', 'edit') }}
     />
     <select id="empSelect" class="employee-select" size="12">
       {% for e in employees %}
-      <option value="{{ e.id }}">{{ e.username }}</option>
+      <option value="{{ e.id }}">{{ e.name or e.username }}</option>
       {% endfor %}
     </select>
   </aside>
@@ -366,6 +366,20 @@ view and edit their information', 'edit') }}
       ? empForm.querySelector('button[type="submit"]')
       : null;
     if (submitBtn) submitBtn.disabled = true;
+    
+    // Auto-select employee from URL parameter
+    {% if selected_employee_id %}
+    const selectedId = "{{ selected_employee_id }}";
+    if (empSelect && selectedId) {
+      empSelect.value = selectedId;
+      loadEmployeeData();
+      // Scroll to selected option
+      const selectedOption = empSelect.querySelector(`option[value="${selectedId}"]`);
+      if (selectedOption) {
+        selectedOption.scrollIntoView({ block: 'center' });
+      }
+    }
+    {% endif %}
   });
 </script>
 {% endblock %}

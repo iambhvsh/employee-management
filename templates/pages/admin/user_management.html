@@ -35,6 +35,7 @@
       <tr>
         <th>ID</th>
         <th>Username</th>
+        <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
         <th>Actions</th>
@@ -45,6 +46,7 @@
       <tr>
         <td>{{ admin.id }}</td>
         <td><strong>{{ admin.username }}</strong></td>
+        <td>{{ admin.name or '—' }}</td>
         <td>{{ admin.email or '—' }}</td>
         <td>{{ admin.phone or '—' }}</td>
         <td>
@@ -97,6 +99,7 @@
       <tr>
         <th>ID</th>
         <th>Username</th>
+        <th>Name</th>
         <th>Email</th>
         <th>Phone</th>
         <th>Status</th>
@@ -108,6 +111,7 @@
       <tr>
         <td>{{ emp.id }}</td>
         <td><strong>{{ emp.username }}</strong></td>
+        <td>{{ emp.name or '—' }}</td>
         <td>{{ emp.email or '—' }}</td>
         <td>{{ emp.phone or '—' }}</td>
         <td>
@@ -152,7 +156,7 @@
     <span class="material-symbols-outlined card-header-icon">person_add</span>
     Create New User
   </h3>
-  <form method="POST" action="{{ url_for('user_management_create') }}" class="ticket-form">
+  <form method="POST" action="{{ url_for('user_management_create') }}" class="ticket-form no-auto-validation" data-custom-validation="true">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
     <label>Username <span class="required-asterisk">*</span></label>
@@ -169,16 +173,28 @@
     />
     <div id="new_username_error" class="error-message d-none"></div>
 
+    <label>Full Name <span class="required-asterisk">*</span></label>
+    <input
+      type="text"
+      id="new_name"
+      name="name"
+      required
+      maxlength="100"
+      placeholder="Enter full name"
+      title="Full name is required"
+    />
+    <div id="new_name_error" class="error-message d-none"></div>
+
     <label>Password <span class="required-asterisk">*</span></label>
     <input
       type="password"
       id="new_password"
       name="password"
       required
-      minlength="6"
+      minlength="8"
       maxlength="128"
-      placeholder="Minimum 6 characters"
-      title="Password must be between 6 and 128 characters"
+      placeholder="Minimum 8 characters"
+      title="Password must be between 8 and 128 characters"
     />
     <div id="new_password_error" class="error-message d-none"></div>
 
@@ -188,7 +204,7 @@
       id="confirm_password"
       name="confirm_password"
       required
-      minlength="6"
+      minlength="8"
       maxlength="128"
       placeholder="Re-enter password"
       title="Must match the password above"
@@ -244,7 +260,7 @@
     <span class="material-symbols-outlined card-header-icon">lock_reset</span>
     Change User Password
   </h3>
-  <form method="POST" action="{{ url_for('user_management_password') }}" class="ticket-form">
+  <form method="POST" action="{{ url_for('user_management_password') }}" class="ticket-form no-auto-validation" data-custom-validation="true">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
     <label>Select User <span class="required-asterisk">*</span></label>
@@ -277,10 +293,10 @@
       id="new_password_change"
       name="new_password"
       required
-      minlength="6"
+      minlength="8"
       maxlength="128"
-      placeholder="Enter new password (min 6 characters)"
-      title="Password must be between 6 and 128 characters"
+      placeholder="Enter new password (min 8 characters)"
+      title="Password must be between 8 and 128 characters"
     />
 
     <label>Confirm New Password <span class="required-asterisk">*</span></label>
@@ -289,7 +305,7 @@
       id="confirm_password_change"
       name="confirm_password"
       required
-      minlength="6"
+      minlength="8"
       maxlength="128"
       placeholder="Re-enter new password"
       title="Must match the new password above"
@@ -320,7 +336,7 @@
         <span class="material-symbols-outlined">close</span>
       </button>
     </div>
-    <form method="POST" action="{{ url_for('user_management_edit') }}" class="ticket-form m-0">
+    <form method="POST" action="{{ url_for('user_management_edit') }}" class="ticket-form m-0 no-auto-validation" data-custom-validation="true">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
       <input type="hidden" id="edit_user_id" name="user_id" />
 
@@ -346,6 +362,18 @@
         placeholder="Enter username (min 3 characters)"
       />
       <div id="edit_username_error" class="error-message d-none"></div>
+
+      <label>Full Name <span class="required-asterisk">*</span></label>
+      <input
+        type="text"
+        id="edit_name"
+        name="name"
+        required
+        maxlength="100"
+        placeholder="Enter full name"
+        title="Full name is required"
+      />
+      <div id="edit_name_error" class="error-message d-none"></div>
 
       <div class="mt-4 mb-4">
         <label class="checkbox-container mb-0">
@@ -540,12 +568,22 @@
     return null;
   }
 
+  function validateName(name) {
+    if (!name || name.trim().length === 0) {
+      return "Full name is required";
+    }
+    if (name.length > 100) {
+      return "Name is too long (maximum 100 characters)";
+    }
+    return null;
+  }
+
   function validatePassword(password) {
     if (!password || password.length === 0) {
       return "Password is required";
     }
-    if (password.length < 6) {
-      return "Password must be at least 6 characters long";
+    if (password.length < 8) {
+      return "Password must be at least 8 characters long";
     }
     if (password.length > 128) {
       return "Password is too long (maximum 128 characters)";
@@ -646,6 +684,7 @@
       .then(function(user) {
         document.getElementById("edit_user_id").value = userId;
         document.getElementById("edit_username").value = username;
+        document.getElementById("edit_name").value = user.name || "";
         document.getElementById("edit_is_admin").checked = isAdmin;
 
         document.getElementById("edit_email").value = user.email || "";
@@ -676,6 +715,7 @@
   function clearAllEditFieldErrors() {
     const fieldIds = [
       "edit_username",
+      "edit_name",
       "edit_email",
       "edit_phone",
       "edit_laptop",
@@ -713,6 +753,17 @@
       if (!firstErrorField) firstErrorField = document.getElementById("edit_username");
     } else {
       clearFieldError("edit_username");
+    }
+
+    // Validate name
+    const name = document.getElementById("edit_name").value.trim();
+    const nameError = validateName(name);
+    if (nameError) {
+      errors.push(nameError);
+      showFieldError("edit_name", nameError);
+      if (!firstErrorField) firstErrorField = document.getElementById("edit_name");
+    } else {
+      clearFieldError("edit_name");
     }
 
     // Validate email
@@ -771,6 +822,7 @@
 
   function attemptCloseEditModal() {
     const username = document.getElementById("edit_username").value.trim();
+    const name = document.getElementById("edit_name").value.trim();
     const email = document.getElementById("edit_email").value.trim();
     const phone = document.getElementById("edit_phone").value.trim();
     const laptop = document.getElementById("edit_laptop").value.trim();
@@ -779,7 +831,7 @@
     const mouse = document.getElementById("edit_mouse").value.trim();
     const headset = document.getElementById("edit_headset").value.trim();
 
-    const hasData = username || email || phone || laptop || charger || keyboard || mouse || headset;
+    const hasData = username || name || email || phone || laptop || charger || keyboard || mouse || headset;
 
     if (hasData) {
       if (confirm("⚠️ You have unsaved changes. Are you sure you want to close without saving?")) {
@@ -880,13 +932,14 @@
         const errors = [];
 
         const username = document.getElementById("new_username").value.trim();
+        const name = document.getElementById("new_name").value.trim();
         const password = document.getElementById("new_password").value;
         const confirmPassword = document.getElementById("confirm_password").value;
         const email = document.getElementById("new_email").value.trim();
         const phone = document.getElementById("new_phone").value.trim();
 
         // Clear previous errors
-        ["new_username", "new_password", "confirm_password", "new_email", "new_phone"].forEach(function(id) {
+        ["new_username", "new_name", "new_password", "confirm_password", "new_email", "new_phone"].forEach(function(id) {
           const errorDiv = document.getElementById(id + "_error");
           if (errorDiv) errorDiv.classList.add("d-none");
           const field = document.getElementById(id);
@@ -900,6 +953,15 @@
           showFieldError("new_username", usernameError);
         } else {
           clearFieldError("new_username");
+        }
+
+        // Validate name
+        const nameError = validateName(name);
+        if (nameError) {
+          errors.push(nameError);
+          showFieldError("new_name", nameError);
+        } else {
+          clearFieldError("new_name");
         }
 
         // Validate password
@@ -994,6 +1056,7 @@
     // Edit form real-time validation
     const editFields = [
       { id: "edit_username", validator: validateUsername },
+      { id: "edit_name", validator: validateName },
       { id: "edit_email", validator: validateEmail },
       { id: "edit_phone", validator: validatePhone },
       { id: "edit_laptop", validator: function(v) { return validateAssetField(v, "Laptop"); } },
@@ -1034,6 +1097,15 @@
         const error = validateUsername(this.value.trim());
         if (error) showFieldError("new_username", error);
         else clearFieldError("new_username");
+      });
+    }
+
+    const newName = document.getElementById("new_name");
+    if (newName) {
+      newName.addEventListener("blur", function() {
+        const error = validateName(this.value.trim());
+        if (error) showFieldError("new_name", error);
+        else clearFieldError("new_name");
       });
     }
 

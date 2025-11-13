@@ -41,7 +41,7 @@ header('Ticket Management', 'Review and manage employee tickets',
     <select name="employee_id" required>
       <option value="">Choose an employee</option>
       {% for e in employees %}
-      <option value="{{ e.id }}">{{ e.username }}</option>
+      <option value="{{ e.id }}">{{ e.name or e.username }}</option>
       {% endfor %}
     </select>
 

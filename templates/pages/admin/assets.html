@@ -1,0 +1,171 @@
+{% extends 'layouts/admin.html' %}
+{% from 'ui/page.html' import header %}
+{% from 'ui/card.html' import empty %}
+
+{% block page_content %}
+{{ header('Assets Inventory', 'Track and manage company assets with QR codes', 'inventory_2') }}
+
+<div class="card">
+  <h3>
+    <span class="material-symbols-outlined card-header-icon">add_circle</span>
+    Add New Asset
+  </h3>
+  <form method="post" action="{{ url_for('admin_create_asset') }}" class="ticket-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    
+    <label>Assign To User</label>
+    <select id="assign_user" name="employee_id">
+      <option value="">Not assigned (Available)</option>
+      <optgroup label="Administrators">
+        {% for admin in admins %}
+        <option value="{{ admin.id }}">{{ admin.name or admin.username }}</option>
+        {% endfor %}
+      </optgroup>
+      <optgroup label="Employees">
+        {% for emp in employees %}
+        <option value="{{ emp.id }}">{{ emp.name or emp.username }}</option>
+        {% endfor %}
+      </optgroup>
+    </select>
+    
+    <label>Asset ID <span class="required-asterisk">*</span></label>
+    <input type="text" id="asset_id" name="asset_id" required readonly placeholder="Auto-generated" value="{{ generated_asset_id }}" />
+    
+    <label>Asset Type <span class="required-asterisk">*</span></label>
+    <select id="asset_type" name="asset_type" required>
+      <option value="">Select type</option>
+      {% for type in asset_types %}
+      <option value="{{ type }}">{{ type }}</option>
+      {% endfor %}
+    </select>
+    
+    <label>Brand <span class="required-asterisk">*</span></label>
+    <input type="text" id="brand" name="brand" required placeholder="e.g., Apple, Dell" />
+    
+    <label>Model <span class="required-asterisk">*</span></label>
+    <input type="text" id="model" name="model" required placeholder="e.g., MacBook Pro 16" />
+    
+    <label>Serial Number <span class="required-asterisk">*</span></label>
+    <input type="text" id="serial_number" name="serial_number" required placeholder="Enter serial number" />
+    
+    <label>Purchase Date <span class="required-asterisk">*</span></label>
+    <input type="date" id="purchase_date" name="purchase_date" required />
+    
+    <label>Warranty Expiry</label>
+    <input type="date" id="warranty_expiry" name="warranty_expiry" />
+    
+    <label>Notes</label>
+    <textarea id="notes" name="notes" rows="3" placeholder="Additional notes about this asset"></textarea>
+    
+    <div class="form-button-group">
+      <button type="submit">
+        <span class="material-symbols-outlined button-icon-sm">add</span>
+        Create Asset & Generate QR
+      </button>
+      <button type="reset" class="btn-secondary">
+        <span class="material-symbols-outlined button-icon-sm">refresh</span>
+        Reset
+      </button>
+    </div>
+  </form>
+</div>
+
+<h3 class="section-title">
+  <span class="material-symbols-outlined card-header-icon">list</span>
+  All Assets ({{ assets|length }})
+</h3>
+  
+{% if assets %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Asset ID</th>
+        <th>Type</th>
+        <th>Brand/Model</th>
+        <th>Serial Number</th>
+        <th>Status</th>
+        <th>Assigned To</th>
+        <th>QR Code</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for asset in assets %}
+      <tr>
+        <td data-label="Asset ID"><strong>{{ asset.asset_id }}</strong></td>
+        <td data-label="Type">{{ asset.asset_type }}</td>
+        <td data-label="Brand/Model">{{ asset.brand or '—' }} {{ asset.model or '' }}</td>
+        <td data-label="Serial Number">{{ asset.serial_number or '—' }}</td>
+        <td data-label="Status">
+          <span class="status-badge status-{{ asset.status.lower() }}">
+            {{ asset.status }}
+          </span>
+        </td>
+        <td data-label="Assigned To">
+          {% if asset.employee %}
+            <strong>{{ asset.employee.name or asset.employee.username }}</strong>
+            <br><small style="color: var(--muted-foreground);">Since {{ asset.assigned_date.strftime('%Y-%m-%d') if asset.assigned_date else '—' }}</small>
+          {% else %}
+            <span style="color: var(--muted-foreground);">Not assigned</span>
+          {% endif %}
+        </td>
+        <td data-label="QR Code">
+          {% if asset.qr_code %}
+            <a href="{{ url_for('download_asset_qr', asset_id=asset.id) }}" class="btn btn-secondary btn-sm">
+              <span class="material-symbols-outlined">qr_code_2</span>
+              <span class="btn-text">Download</span>
+            </a>
+          {% else %}
+            <span style="color: var(--muted-foreground);">—</span>
+          {% endif %}
+        </td>
+        <td data-label="Actions">
+          <div style="display: flex !important; flex-direction: row !important; gap: 0.5rem; align-items: center; flex-wrap: nowrap;">
+            <a href="{{ url_for('view_asset', asset_id=asset.asset_id) }}" class="btn btn-secondary btn-sm" style="margin: 0; padding: 0.5rem 1rem; white-space: nowrap;">
+              <span class="material-symbols-outlined">visibility</span>
+              <span class="btn-text">View Info</span>
+            </a>
+            
+            <form method="post" action="{{ url_for('admin_delete_asset', asset_id=asset.id) }}" onsubmit="return confirm('Delete asset {{ asset.asset_id }}?');" style="margin: 0; display: inline-block;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+              <button type="submit" class="btn btn-danger btn-sm" style="margin: 0;">
+                <span class="material-symbols-outlined">delete</span>
+                <span class="btn-text">Delete</span>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  {{ empty('inventory_2', 'No Assets Yet', 'Create your first asset to start tracking inventory') }}
+</div>
+{% endif %}
+
+<script>
+// Generate new asset ID on form reset
+document.addEventListener('DOMContentLoaded', function() {
+  const form = document.querySelector('form[action*="assets/create"]');
+  const resetBtn = form.querySelector('button[type="reset"]');
+  
+  if (resetBtn) {
+    resetBtn.addEventListener('click', function() {
+      // After reset, fetch a new asset ID
+      setTimeout(function() {
+        fetch('{{ url_for("generate_asset_id") }}')
+          .then(response => response.json())
+          .then(data => {
+            document.getElementById('asset_id').value = data.asset_id;
+          })
+          .catch(error => console.error('Error generating asset ID:', error));
+      }, 100);
+    });
+  }
+});
+</script>
+{% endblock %}

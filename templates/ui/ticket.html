@@ -24,7 +24,7 @@ show_employee=False, show_actions=False) %} {% if tickets %}
           <strong class="ticket-id-strong">#{{ t.id }}</strong>
         </td>
         {% if show_employee %}
-        <td>{{ t.employee.username if t.employee else '—' }}</td>
+        <td>{{ (t.employee.name or t.employee.username) if t.employee else '—' }}</td>
         {% endif %}
         <td>{{ t.item }}</td>
         <td class="ticket-reason" title="{{ t.reason }}">{{ t.reason }}</td>

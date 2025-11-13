@@ -1,0 +1,182 @@
+{% extends 'layouts/admin.html' %}
+{% from 'ui/page.html' import header %}
+{% from 'ui/card.html' import empty %}
+
+{% block page_content %}
+{{ header('Employee Exit Process', 'Manage employee offboarding and asset collection', 'logout') }}
+
+<div class="card">
+  <h3>
+    <span class="material-symbols-outlined card-header-icon">add_circle</span>
+    Initiate Exit Process
+  </h3>
+  <form method="post" action="{{ url_for('admin_create_exit') }}" class="ticket-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    
+    <label>Select Employee <span class="required-asterisk">*</span></label>
+    <select id="employee_id" name="employee_id" required>
+      <option value="">Choose employee</option>
+      {% for emp in employees %}
+      <option value="{{ emp.id }}">{{ emp.name or emp.username }} - {{ emp.department or 'No Dept' }}</option>
+      {% endfor %}
+    </select>
+    
+    <label>Exit Date <span class="required-asterisk">*</span></label>
+    <input type="date" id="exit_date" name="exit_date" required />
+    
+    <label>Last Working Day <span class="required-asterisk">*</span></label>
+    <input type="date" id="last_working_day" name="last_working_day" required />
+    
+    <label>Reason <span class="required-asterisk">*</span></label>
+    <select id="reason" name="reason" required>
+      <option value="">Select reason</option>
+      <option value="Resignation">Resignation</option>
+      <option value="Termination">Termination</option>
+      <option value="Retirement">Retirement</option>
+      <option value="Contract End">Contract End</option>
+      <option value="Other">Other</option>
+    </select>
+    
+    <label>Exit Type <span class="required-asterisk">*</span></label>
+    <select id="exit_type" name="exit_type" required>
+      <option value="">Select type</option>
+      <option value="Voluntary">Voluntary</option>
+      <option value="Involuntary">Involuntary</option>
+    </select>
+    
+    <label>Notes <span class="required-asterisk">*</span></label>
+    <textarea id="notes" name="notes" rows="3" required placeholder="Additional notes about the exit"></textarea>
+    
+    <div class="form-button-group">
+      <button type="submit">
+        <span class="material-symbols-outlined button-icon-sm">logout</span>
+        Initiate Exit Process
+      </button>
+      <button type="reset" class="btn-secondary">
+        <span class="material-symbols-outlined button-icon-sm">refresh</span>
+        Reset
+      </button>
+    </div>
+  </form>
+</div>
+
+<h3 class="section-title">
+  <span class="material-symbols-outlined card-header-icon">list</span>
+  Exit Records ({{ exits|length }})
+</h3>
+  
+{% if exits %}
+  {% for exit in exits %}
+  <div class="card" style="margin-bottom: 16px;">
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+      <div>
+        <h4 style="margin: 0; font-size: 18px;">{{ exit.employee.name or exit.employee.username }}</h4>
+        <p style="margin: 4px 0; color: var(--muted-foreground); font-size: 14px;">
+          {{ exit.employee.department or 'No Department' }} | {{ exit.reason or 'No reason specified' }}
+        </p>
+        <p style="margin: 4px 0; font-size: 13px;">
+          <strong>Last Working Day:</strong> {{ exit.last_working_day.strftime('%B %d, %Y') if exit.last_working_day else '—' }}
+        </p>
+      </div>
+      <span class="status-badge status-{{ exit.status.lower().replace(' ', '-') }}">
+        {{ exit.status }}
+      </span>
+    </div>
+    
+    <form method="post" action="{{ url_for('admin_update_exit', exit_id=exit.id) }}" class="ticket-form" style="margin: 0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+      
+      <h4 class="form-section-header">
+        <span class="material-symbols-outlined">checklist</span>
+        Exit Checklist
+      </h4>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px; margin-bottom: 16px;">
+        <label class="checkbox-container">
+          <input type="checkbox" name="assets_returned" {% if exit.assets_returned %}checked{% endif %} />
+          <span>Assets Returned</span>
+        </label>
+        
+        <label class="checkbox-container">
+          <input type="checkbox" name="email_access_revoked" {% if exit.email_access_revoked %}checked{% endif %} />
+          <span>Email Access Revoked</span>
+        </label>
+        
+        <label class="checkbox-container">
+          <input type="checkbox" name="vpn_access_revoked" {% if exit.vpn_access_revoked %}checked{% endif %} />
+          <span>VPN Access Revoked</span>
+        </label>
+        
+        <label class="checkbox-container">
+          <input type="checkbox" name="system_access_revoked" {% if exit.system_access_revoked %}checked{% endif %} />
+          <span>System Access Revoked</span>
+        </label>
+        
+        <label class="checkbox-container">
+          <input type="checkbox" name="building_access_revoked" {% if exit.building_access_revoked %}checked{% endif %} />
+          <span>Building Access Revoked</span>
+        </label>
+        
+        <label class="checkbox-container">
+          <input type="checkbox" name="exit_interview_completed" {% if exit.exit_interview_completed %}checked{% endif %} />
+          <span>Exit Interview Completed</span>
+        </label>
+        
+        <label class="checkbox-container">
+          <input type="checkbox" name="clearance_certificate_issued" {% if exit.clearance_certificate_issued %}checked{% endif %} />
+          <span>Clearance Certificate Issued</span>
+        </label>
+      </div>
+      
+      <label>Assets Return Notes</label>
+      <textarea id="assets_notes_{{ exit.id }}" name="assets_notes" rows="2" placeholder="Notes about asset return">{{ exit.assets_notes or '' }}</textarea>
+      
+      <div class="form-button-group">
+        <button type="submit" class="btn-secondary">
+          <span class="material-symbols-outlined button-icon-sm">save</span>
+          Update Checklist
+        </button>
+        
+        {% if exit.status != 'Completed' %}
+        <button type="button" class="btn-success" data-complete-url="{{ url_for('admin_complete_exit', exit_id=exit.id) }}" onclick="completeExit(this)">
+          <span class="material-symbols-outlined button-icon-sm">check_circle</span>
+          Mark Complete
+        </button>
+        {% endif %}
+      </div>
+    </form>
+    
+    {% if exit.notes %}
+    <div class="info-message-box" style="margin-top: 16px;">
+      <span class="material-symbols-outlined info-icon-blue">note</span>
+      <div>
+        <strong>Notes:</strong>
+        <p style="margin: 4px 0 0 0;">{{ exit.notes }}</p>
+      </div>
+    </div>
+    {% endif %}
+    
+    {% if exit.completed_date %}
+    <p style="margin-top: 12px; font-size: 12px; color: var(--muted-foreground);">
+      Completed on {{ exit.completed_date.strftime('%B %d, %Y at %I:%M %p') }}
+    </p>
+    {% endif %}
+  </div>
+  {% endfor %}
+{% else %}
+<div class="card">
+  {{ empty('logout', 'No Exit Records', 'No employee exits have been initiated yet') }}
+</div>
+{% endif %}
+
+<script>
+function completeExit(button) {
+  if (confirm('Mark exit as completed?')) {
+    var form = button.form;
+    var url = button.getAttribute('data-complete-url');
+    form.action = url;
+    form.submit();
+  }
+}
+</script>
+{% endblock %}

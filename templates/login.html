@@ -6,7 +6,7 @@
 
 {% block content %}
   <div class="login-theme-toggle theme-toggle-host"></div>
-  <!-- Login page with role-based authentication -->
+  <!-- Login page -->
   <div class="login-wrapper">
     <div class="login-card">
       <div class="login-header">
@@ -19,38 +19,22 @@
 
       <form method="post" action="{{ url_for('login') }}" id="loginForm">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-        <div class="form-group">
-          <label for="role">Role</label>
-          <select
-            id="role"
-            name="role"
-            required
-            onchange="updateDepartments()"
-          >
-            <option value="">Choose your role</option>
-            <option value="admin">Admin</option>
-            <option value="employee">Employee</option>
-          </select>
-        </div>
-
-        <div class="form-group" id="departmentGroup" style="display: none">
-          <label for="department">Department</label>
-          <select
-            id="department"
-            name="department"
-            onchange="updateUsernames()"
-          >
-            <option value="">Select your department</option>
-          </select>
-        </div>
-
+        
+        <!-- Username Input -->
         <div class="form-group">
           <label for="username">Username</label>
-          <select id="username" name="username" required disabled>
-            <option value="">First select a role</option>
-          </select>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            required
+            placeholder="Enter your username"
+            autocomplete="username"
+            autofocus
+          />
         </div>
 
+        <!-- Password -->
         <div class="form-group">
           <label for="password">Password</label>
           <input
@@ -59,90 +43,49 @@
             name="password"
             required
             placeholder="Enter your password"
+            autocomplete="current-password"
           />
         </div>
 
-        <button type="submit">Continue</button>
+        <button type="submit" id="loginBtn">
+          Sign In
+        </button>
       </form>
     </div>
   </div>
-<script type="application/json" id="login-data">{{ {
-  "admins": admins,
-  "employees": employees,
-  "departments": departments,
-  "employeeDepartments": employee_departments
-} | tojson }}</script>
-
 <script>
-  const loginDataElement = document.getElementById('login-data');
-  const loginData = loginDataElement ? JSON.parse(loginDataElement.textContent || '{}') : {};
-  const admins = Array.isArray(loginData.admins) ? loginData.admins : [];
-  const employees = Array.isArray(loginData.employees) ? loginData.employees : [];
-  const departments = Array.isArray(loginData.departments) ? loginData.departments : [];
-  const employeeDepartments = loginData.employeeDepartments && typeof loginData.employeeDepartments === 'object' ? loginData.employeeDepartments : {};
-
-  function updateDepartments() {
-    const role = document.getElementById('role').value;
-    const departmentGroup = document.getElementById('departmentGroup');
-    const departmentSelect = document.getElementById('department');
-    const usernameSelect = document.getElementById('username');
-
-    // Reset username select
-    usernameSelect.innerHTML = '<option value="">First select a role</option>';
-    usernameSelect.disabled = true;
-
-    if (role === 'admin') {
-      // Hide department for admin
-      departmentGroup.style.display = 'none';
-      departmentSelect.value = '';
-      // Directly show admins
-      updateUsernames();
-    } else if (role === 'employee') {
-      // Show department for employees
-      departmentGroup.style.display = 'block';
-      departmentSelect.innerHTML = '<option value="">Select your department</option>';
-      departments.forEach(dept => {
-        const option = document.createElement('option');
-        option.value = dept;
-        option.textContent = dept;
-        departmentSelect.appendChild(option);
+  // Form submission with loading state
+  document.addEventListener('DOMContentLoaded', function() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+      loginForm.addEventListener('submit', function(e) {
+        const loginBtn = document.getElementById('loginBtn');
+        if (loginBtn) {
+          loginBtn.disabled = true;
+          loginBtn.innerHTML = '<span class="material-symbols-outlined spin-animation">progress_activity</span><span>Signing in...</span>';
+        }
       });
-    } else {
-      departmentGroup.style.display = 'none';
     }
-  }
-
-  function updateUsernames() {
-    const role = document.getElementById('role').value;
-    const department = document.getElementById('department').value;
-    const usernameSelect = document.getElementById('username');
-
-    usernameSelect.innerHTML = '<option value="">Select your username</option>';
-
-    if (role === 'admin') {
-      usernameSelect.disabled = false;
-      admins.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        usernameSelect.appendChild(option);
-      });
-    } else if (role === 'employee' && department) {
-      usernameSelect.disabled = false;
-      const deptEmployees = employeeDepartments[department] || [];
-      deptEmployees.forEach(name => {
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        usernameSelect.appendChild(option);
-      });
-    } else if (role === 'employee' && !department) {
-      usernameSelect.disabled = true;
-      usernameSelect.innerHTML = '<option value="">First select a department</option>';
-    } else {
-      usernameSelect.disabled = true;
-      usernameSelect.innerHTML = '<option value="">First select a role</option>';
-    }
-  }
+  });
 </script>
+
+<style>
+  /* Login button */
+  #loginBtn {
+    width: 100%;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  /* Animations */
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .spin-animation {
+    animation: spin 1s linear infinite;
+  }
+</style>
 {% endblock %}

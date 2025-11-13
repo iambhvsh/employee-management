@@ -1,5 +1,22 @@
+import os
+
 CONFIG = {
-    "COMPANY_NAME": "Apple Inc.",
+    "COMPANY_NAME": os.environ.get("COMPANY_NAME", "Company Name"),
+    
+    # Email Configuration (SMTP for Outlook) - Use environment variables
+    "MAIL_SERVER": os.environ.get("MAIL_SERVER", "smtp.office365.com"),
+    "MAIL_PORT": int(os.environ.get("MAIL_PORT", "587")),
+    "MAIL_USE_TLS": os.environ.get("MAIL_USE_TLS", "True").lower() == "true",
+    "MAIL_USERNAME": os.environ.get("MAIL_USERNAME", ""),
+    "MAIL_PASSWORD": os.environ.get("MAIL_PASSWORD", ""),
+    "MAIL_DEFAULT_SENDER": os.environ.get("MAIL_DEFAULT_SENDER", ""),
+    
+    # Asset Types
+    "ASSET_TYPES": ["Laptop", "Charger", "Keyboard", "Mouse", "Headset", "Monitor", "Docking Station", "Mobile Device", "Bag"],
+    
+    # Departments
+    "DEPARTMENTS": ["Engineering", "Human Resources", "Finance", "Marketing", "Sales", "Operations", "IT", "Administration"],
+    
     "TICKET_STATUSES": ["Pending", "Approved", "Rejected"],
     "TICKET_GROUPS": {
         "ITEMS": [
@@ -31,6 +48,9 @@ CONFIG = {
         "NAV_TICKETS": "Tickets",
         "NAV_SERVICE_REQUESTS": "Service Requests",
         "NAV_GITHUB_ACCESS": "GitHub Access",
+        "NAV_ASSETS": "Assets Inventory",
+        "NAV_ONBOARDING": "Onboarding",
+        "NAV_EXIT": "Exit Process",
         "NAV_MY_DETAILS": "My Details",
         "NAV_RAISE_TICKET": "Raise Ticket",
         "NAV_SIGN_OUT": "Sign Out",
@@ -38,12 +58,12 @@ CONFIG = {
     },
     "USERS": [
         {
-            "name": "Admin",
-            "email": "admin@apple.com",
+            "name": os.environ.get("ADMIN_NAME"),
+            "email": "admin@company.com",
             "phone": "1234567890",
             "department": "Administration",
             "Admin": True,
-            "password": "Admin@123",
+            "password": os.environ.get("ADMIN_PASSWORD"),
             "assets": {
                 "laptop": "MBP001",
                 "charger": "CRR001",
@@ -51,20 +71,6 @@ CONFIG = {
                 "mouse": "MUE001",
                 "headset": "HS001",
             },
-        },
-        {
-            "name": "Aparna",
-            "email": "aparna@apple.com",
-            "phone": "1234567890",
-            "department": "Human Resources",
-            "password": "Aparna@123",
-            "assets": {
-                "laptop": "MBP002",
-                "charger": "CRR002",
-                "keyboard": "KB002",
-                "mouse": "MUE002",
-                "headset": "HS002",
-            },
-        },
+        }
     ],
 }

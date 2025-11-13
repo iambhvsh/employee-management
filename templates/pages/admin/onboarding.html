@@ -1,0 +1,176 @@
+{% extends 'layouts/admin.html' %}
+{% from 'ui/page.html' import header %}
+{% from 'ui/card.html' import empty %}
+
+{% block page_content %}
+{{ header('Employee Onboarding', 'Complete onboarding process for new employees', 'person_add') }}
+
+<div class="card">
+  <h3>
+    <span class="material-symbols-outlined card-header-icon">add_circle</span>
+    Create New Onboarding
+  </h3>
+  <form method="post" action="{{ url_for('admin_create_onboarding') }}" class="ticket-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    
+    <h4 class="form-section-header">
+      <span class="material-symbols-outlined">person</span>
+      Personal Information
+    </h4>
+    
+    <label>Full Name <span class="required-asterisk">*</span></label>
+    <input type="text" id="full_name" name="full_name" required placeholder="Enter full name" />
+    
+    <label>Personal Email <span class="required-asterisk">*</span></label>
+    <input type="email" id="personal_email" name="personal_email" required placeholder="personal@example.com" />
+    
+    <label>Phone Number <span class="required-asterisk">*</span></label>
+    <input type="tel" id="phone" name="phone" required placeholder="+1234567890" />
+    
+    <label>Date of Birth <span class="required-asterisk">*</span></label>
+    <input type="date" id="date_of_birth" name="date_of_birth" required />
+    
+    <label>Address <span class="required-asterisk">*</span></label>
+    <textarea id="address" name="address" rows="2" required placeholder="Enter full address"></textarea>
+    
+    <h4 class="form-section-header">
+      <span class="material-symbols-outlined">emergency</span>
+      Emergency Contact
+    </h4>
+    
+    <label>Emergency Contact Name <span class="required-asterisk">*</span></label>
+    <input type="text" id="emergency_contact_name" name="emergency_contact_name" required placeholder="Contact person name" />
+    
+    <label>Emergency Contact Phone <span class="required-asterisk">*</span></label>
+    <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" required placeholder="+1234567890" />
+    
+    <h4 class="form-section-header">
+      <span class="material-symbols-outlined">work</span>
+      Employment Details
+    </h4>
+    
+    <label>Username <span class="required-asterisk">*</span></label>
+    <input type="text" id="username" name="username" required placeholder="Enter username" />
+    
+    <label>Password <span class="required-asterisk">*</span></label>
+    <input type="password" id="password" name="password" required placeholder="Enter password" />
+    
+    <label>Work Email <span class="required-asterisk">*</span></label>
+    <input type="email" id="work_email" name="work_email" required placeholder="work@company.com" />
+    
+    <label>Role <span class="required-asterisk">*</span></label>
+    <input type="text" id="role" name="role" required placeholder="e.g., Software Engineer" />
+    
+    <label>Department <span class="required-asterisk">*</span></label>
+    <select id="department" name="department" required>
+      <option value="">Select department</option>
+      {% for dept in departments %}
+      <option value="{{ dept }}">{{ dept }}</option>
+      {% endfor %}
+    </select>
+    
+    <label>Joining Date <span class="required-asterisk">*</span></label>
+    <input type="date" id="joining_date" name="joining_date" required />
+    
+    <label>Reporting Manager <span class="required-asterisk">*</span></label>
+    <input type="text" id="reporting_manager" name="reporting_manager" required placeholder="Manager name" />
+    
+    <label>Work Location <span class="required-asterisk">*</span></label>
+    <input type="text" id="work_location" name="work_location" required placeholder="Office location" />
+    
+    <label>Employment Type <span class="required-asterisk">*</span></label>
+    <select id="employment_type" name="employment_type" required>
+      <option value="">Select type</option>
+      <option value="Full-time">Full-time</option>
+      <option value="Part-time">Part-time</option>
+      <option value="Contract">Contract</option>
+      <option value="Intern">Intern</option>
+    </select>
+    
+    <div class="form-button-group">
+      <button type="submit">
+        <span class="material-symbols-outlined button-icon-sm">person_add</span>
+        Create Onboarding
+      </button>
+      <button type="reset" class="btn-secondary">
+        <span class="material-symbols-outlined button-icon-sm">refresh</span>
+        Reset
+      </button>
+    </div>
+  </form>
+</div>
+
+<h3 class="section-title">
+  <span class="material-symbols-outlined card-header-icon">list</span>
+  Onboarding Records ({{ onboardings|length }})
+</h3>
+  
+{% if onboardings %}
+<div class="table-wrapper">
+  <table>
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Full Name</th>
+        <th>Role</th>
+        <th>Department</th>
+        <th>Joining Date</th>
+        <th>Status</th>
+        <th>Welcome Email</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for onboarding in onboardings %}
+      <tr>
+        <td data-label="Employee"><strong>{{ onboarding.employee.name or onboarding.employee.username }}</strong></td>
+        <td data-label="Full Name">{{ onboarding.full_name }}</td>
+        <td data-label="Role">{{ onboarding.role }}</td>
+        <td data-label="Department">{{ onboarding.department }}</td>
+        <td data-label="Joining Date">{{ onboarding.joining_date.strftime('%Y-%m-%d') if onboarding.joining_date else '—' }}</td>
+        <td data-label="Status">
+          <span class="status-badge status-{{ onboarding.status.lower().replace(' ', '-') }}">
+            {{ onboarding.status }}
+          </span>
+        </td>
+        <td data-label="Welcome Email">
+          {% if onboarding.welcome_email_sent %}
+            <span style="color: var(--green);">✓ Sent</span>
+          {% else %}
+            <span style="color: var(--muted-foreground);">Not sent</span>
+          {% endif %}
+        </td>
+        <td data-label="Actions">
+          <div class="action-buttons">
+            {% if onboarding.status != 'Completed' %}
+              <form method="post" action="{{ url_for('admin_complete_onboarding', onboarding_id=onboarding.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn btn-success btn-sm">
+                  <span class="material-symbols-outlined">check_circle</span>
+                  <span class="btn-text">Complete</span>
+                </button>
+              </form>
+            {% endif %}
+            
+            {% if onboarding.employee.email %}
+              <form method="post" action="{{ url_for('admin_resend_welcome_email', onboarding_id=onboarding.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <button type="submit" class="btn btn-secondary btn-sm">
+                  <span class="material-symbols-outlined">email</span>
+                  <span class="btn-text">Resend Email</span>
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card">
+  {{ empty('person_add', 'No Onboarding Records', 'Create your first onboarding to get started') }}
+</div>
+{% endif %}
+{% endblock %}
