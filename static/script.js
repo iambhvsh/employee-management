@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initFormValidation();
   initStatusBadges();
   autoHideFlashMessages();
+  initTableScrollIndicators();
 });
 
 // Theme Management
@@ -241,6 +242,9 @@ function initFormValidation() {
       updateSubmitButton(form, submitButton);
     }
   });
+  
+  // Initialize disabled button feedback
+  addDisabledButtonFeedback();
 }
 
 // Comprehensive field validation with visual feedback
@@ -439,6 +443,7 @@ function updateSubmitButton(form, submitButton) {
   const allFields = form.querySelectorAll("input:not([type='hidden']):not([type='submit']), textarea, select");
   let allValid = true;
   let hasRequiredFields = false;
+  let emptyRequiredFields = [];
 
   allFields.forEach((field) => {
     // Check if field is required and empty
@@ -448,6 +453,8 @@ function updateSubmitButton(form, submitButton) {
       
       if (!value) {
         allValid = false;
+        const label = field.previousElementSibling?.textContent || field.placeholder || field.name || 'This field';
+        emptyRequiredFields.push(label.replace('*', '').trim());
         return;
       }
       
@@ -498,10 +505,78 @@ function updateSubmitButton(form, submitButton) {
     submitButton.classList.remove("btn-disabled");
     submitButton.style.opacity = "1";
     submitButton.style.cursor = "pointer";
+    submitButton.removeAttribute("title");
   } else {
     submitButton.classList.add("btn-disabled");
     submitButton.style.opacity = "0.5";
     submitButton.style.cursor = "not-allowed";
+    
+    // Add helpful tooltip showing what's missing
+    if (emptyRequiredFields.length > 0) {
+      submitButton.setAttribute("title", "Please fill in: " + emptyRequiredFields.join(", "));
+    } else {
+      submitButton.setAttribute("title", "Please fill in all required fields correctly");
+    }
+  }
+  
+  // Store validation state for click handler
+  submitButton.dataset.validationMessage = emptyRequiredFields.length > 0 
+    ? "Please fill in the following required fields:\n• " + emptyRequiredFields.join("\n• ")
+    : "Please fill in all required fields correctly";
+}
+
+// Add click handler for disabled buttons to show validation feedback
+function addDisabledButtonFeedback() {
+  document.addEventListener("click", (e) => {
+    const button = e.target.closest("button[type='submit']");
+    if (button && button.disabled && button.dataset.validationMessage) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Show validation message
+      showValidationAlert(button.dataset.validationMessage, button.form);
+      
+      // Focus first empty required field
+      const form = button.form;
+      if (form) {
+        const firstEmptyRequired = form.querySelector("input[required]:not([type='hidden']), textarea[required], select[required]");
+        if (firstEmptyRequired && !firstEmptyRequired.value.trim()) {
+          firstEmptyRequired.focus();
+          firstEmptyRequired.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    }
+  }, true);
+}
+
+// Show validation alert near the button
+function showValidationAlert(message, form) {
+  // Remove any existing alerts
+  const existingAlert = form?.querySelector(".validation-feedback-alert");
+  if (existingAlert) {
+    existingAlert.remove();
+  }
+  
+  // Create alert element
+  const alert = document.createElement("div");
+  alert.className = "validation-feedback-alert";
+  alert.innerHTML = `
+    <span class="material-symbols-outlined">error</span>
+    <div class="validation-feedback-content">
+      <strong>Cannot Submit</strong>
+      <p>${message.replace(/\n/g, '<br>')}</p>
+    </div>
+  `;
+  
+  // Insert before submit button
+  const submitButton = form?.querySelector("button[type='submit']");
+  if (submitButton && form) {
+    submitButton.parentElement.insertBefore(alert, submitButton);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      alert.remove();
+    }, 5000);
   }
 }
 
@@ -566,5 +641,32 @@ function autoHideFlashMessages() {
     setTimeout(() => {
       flash.remove();
     }, 5000);
+  });
+}
+
+// Initialize table scroll indicators
+function initTableScrollIndicators() {
+  const tableWrappers = document.querySelectorAll(".table-wrapper, .table-responsive");
+  
+  tableWrappers.forEach((wrapper) => {
+    const checkScroll = () => {
+      const hasHorizontalScroll = wrapper.scrollWidth > wrapper.clientWidth;
+      const isScrolledToEnd = wrapper.scrollLeft >= (wrapper.scrollWidth - wrapper.clientWidth - 5);
+      
+      if (hasHorizontalScroll && !isScrolledToEnd) {
+        wrapper.classList.add("has-scroll");
+      } else {
+        wrapper.classList.remove("has-scroll");
+      }
+    };
+    
+    // Check on load
+    checkScroll();
+    
+    // Check on scroll
+    wrapper.addEventListener("scroll", checkScroll);
+    
+    // Check on window resize
+    window.addEventListener("resize", checkScroll);
   });
 }

@@ -1088,22 +1088,29 @@ def admin_dashboard() -> str:
 
 
 
+@app.route('/admin/employees', methods=['GET'])
+@login_required
+@admin_required
+def admin_employees_list() -> str:
+    """Display list of all employees"""
+    employees: List[User] = User.query.filter_by(is_admin=False).order_by(User.username).all()
+    return render_template('pages/admin/employees.html', employees=employees)
 
 
 @app.route('/admin/employees/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def admin_employees() -> ResponseReturnValue:
+def admin_employees_manage() -> ResponseReturnValue:
     if request.method == 'POST':
         uid = request.form.get('user_id')
         if not uid:
             flash('Select an employee before saving', 'error')
-            return redirect(url_for('admin_employees'))
+            return redirect(url_for('admin_employees_manage'))
 
         user = User.query.get(int(uid))
         if not user:
             flash('Employee not found', 'error')
-            return redirect(url_for('admin_employees'))
+            return redirect(url_for('admin_employees_manage'))
 
         try:
             # Validate employee details with Pydantic
@@ -1141,18 +1148,18 @@ def admin_employees() -> ResponseReturnValue:
             db.session.commit()
             logger.info(f"Admin {current_user.username} updated employee {user.username} via edit page")
             flash('Employee updated', 'success')
-            return redirect(url_for('admin_employees', employee=user.id))
+            return redirect(url_for('admin_employees_manage', employee=user.id))
 
         except ValidationError as e:
             logger.error(f"Validation error updating employee: {e}")
             errors = e.errors()
             for error in errors:
                 flash(f"{error['loc'][0]}: {error['msg']}", 'error')
-            return redirect(url_for('admin_employees'))
+            return redirect(url_for('admin_employees_manage'))
         except Exception as e:
             logger.error(f"Error updating employee: {e}")
             flash('An error occurred', 'error')
-            return redirect(url_for('admin_employees'))
+            return redirect(url_for('admin_employees_manage'))
 
     employees: List[User] = User.query.filter_by(is_admin=False).order_by(User.username).all()
     

@@ -1189,5 +1189,30 @@
       }
     }
   });
+
+  // Clear pre-filled form data on page load
+  window.addEventListener("DOMContentLoaded", function() {
+    // Clear Create User form fields
+    const createUserForm = document.querySelector('form[action*="user_management_create"]');
+    if (createUserForm) {
+      const fieldsToReset = ["new_username", "new_name", "new_password", "confirm_password", "new_email", "new_phone"];
+      fieldsToReset.forEach(function(fieldId) {
+        const field = document.getElementById(fieldId);
+        if (field && field.value) {
+          // Only clear if it looks like dummy/placeholder data
+          const value = field.value.toLowerCase();
+          if (value === "admin" || value === "..." || value === "••••••••" || value.includes("test") || value.includes("dummy")) {
+            field.value = "";
+          }
+        }
+      });
+      
+      // Uncheck admin checkbox by default
+      const adminCheckbox = document.getElementById("new_is_admin");
+      if (adminCheckbox) {
+        adminCheckbox.checked = false;
+      }
+    }
+  });
 </script>
 {% endblock %}

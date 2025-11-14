@@ -12,19 +12,20 @@ header('Raise a Ticket', 'Report issues or request assistance') }}
     <!-- Ticket creation form with categorized items -->
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-    <label>Category</label>
+    <label>Category <span class="required-asterisk">*</span></label>
     <select id="groupSelect" name="group" required>
+      <option value="">Select a category</option>
       {% for g in groups.keys() %}
       <option value="{{ g }}">{{ g }}</option>
       {% endfor %}
     </select>
 
-    <label>Item</label>
+    <label>Item <span class="required-asterisk">*</span></label>
     <select id="itemSelect" name="item" required>
-      
+      <option value="">First select a category</option>
     </select>
 
-    <label>Reason / Description</label>
+    <label>Reason / Description <span class="required-asterisk">*</span></label>
     <textarea
       name="reason"
       required

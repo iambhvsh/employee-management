@@ -24,17 +24,17 @@
           <span class="nav-text">{{ CONFIG["LABELS"]["NAV_DASHBOARD"] }}</span>
         </a>
         <a
-          href="{{ url_for('admin_employees') }}"
-          class="nav-link {% if request.endpoint == 'admin_employees' %}active{% endif %}"
+          href="{{ url_for('admin_employees_list') }}"
+          class="nav-link {% if request.endpoint == 'admin_employees_list' %}active{% endif %}"
           title="Employees"
         >
           <span class="material-symbols-outlined">group</span>
           <span class="nav-text">{{ CONFIG["LABELS"]["NAV_EMPLOYEES"] }}</span>
         </a>
         <a
-          href="{{ url_for('admin_employees') }}"
-          class="nav-link {% if request.endpoint == 'admin_employees' %}active{% endif %}"
-          title="Manage"
+          href="{{ url_for('admin_employees_manage') }}"
+          class="nav-link {% if request.endpoint == 'admin_employees_manage' %}active{% endif %}"
+          title="Manage Employees"
         >
           <span class="material-symbols-outlined">settings</span>
           <span class="nav-text">{{ CONFIG["LABELS"]["NAV_MANAGE"] }}</span>
