@@ -2,6 +2,50 @@
 
 A comprehensive role-based employee management system built with Flask, featuring ticket management, asset tracking, onboarding/offboarding workflows, and automated email notifications.
 
+## Quick Start Guide
+
+**For first-time users, follow tse steps:**
+
+1. **Install Python 3.8+** (if not already installed)
+
+2. **Clone/Download the project** and navigate to the directory
+
+3. **Create virtual environment:**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # Linux/macOS
+   venv\Scripts\activate     # Windows
+   ```
+
+4. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. **Configure environment:**
+   ```bash
+   cp .env.example .env  # Linux/macOS
+   copy .env.example .env  # Windows
+   ```
+
+6. **Edit `.env` file - THIS IS CRITICAL:**
+   - Generate SECRET_KEY: `python -c "import secrets; print(secrets.token_hex(32))"`
+   - Set `ADMIN_NAME=admin` (or your preferred username)
+   - Set `ADMIN_PASSWORD=YourSecurePass123!` (must meet password requirements)
+
+7. **Run the application:**
+   ```bash
+   python flask_employee_portal_app.py
+   ```
+
+8. **Login at http://localhost:5004**
+   - Username: The value you set for `ADMIN_NAME`
+   - Password: The value you set for `ADMIN_PASSWORD`
+
+**⚠️ If you get "Failed login" error:** You forgot to set `ADMIN_NAME` and `ADMIN_PASSWORD` in `.env`. Delete `app.db`, configure `.env`, and restart.
+
+---
+
 ## Features
 
 ### For Employees
@@ -103,13 +147,47 @@ notepad .env
 
 ### Environment Configuration
 
-Edit the `.env` file with your settings:
+**IMPORTANT:** You must configure the `.env` file before running the application for the first time.
+
+#### Step 1: Generate a Secret Key
+
+**Linux/macOS:**
+```bash
+python3 -c "import secrets; print(secrets.token_hex(32))"
+```
+
+**Windows:**
+```cmd
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+Copy the generated key - you'll need it in the next step.
+
+#### Step 2: Set Admin Credentials
+
+You **MUST** set both `ADMIN_NAME` and `ADMIN_PASSWORD` in your `.env` file. Without these, you won't be able to login.
+
+**Admin Password Requirements:**
+- At least 8 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+- At least one special character (!@#$%^&*(),.?":{}|<>)
+
+**Example of a valid password:** `Admin@123456` or `MySecure#Pass1`
+
+#### Step 3: Edit the `.env` File
+
+Open the `.env` file and configure these **REQUIRED** settings:
 
 ```env
-# REQUIRED: Generate a secure secret key
-SECRET_KEY=your-secret-key-here
+# REQUIRED: Paste the secret key you generated
+SECRET_KEY=paste-your-generated-secret-key-here
 
-# REQUIRED: Set admin password (must meet complexity requirements)
+# REQUIRED: Set admin username (default: admin)
+ADMIN_NAME=admin
+
+# REQUIRED: Set a strong admin password
 ADMIN_PASSWORD=YourSecurePassword123!
 
 # Flask Configuration
@@ -126,9 +204,9 @@ PORT=5004
 MAIL_SERVER=smtp.office365.com
 MAIL_PORT=587
 MAIL_USE_TLS=True
-MAIL_USERNAME=your-email@company.com
-MAIL_PASSWORD=your-email-password
-MAIL_DEFAULT_SENDER=your-email@company.com
+MAIL_USERNAME=
+MAIL_PASSWORD=
+MAIL_DEFAULT_SENDER=
 
 # Scheduler Configuration (requires email to be configured)
 ENABLE_SCHEDULER=False
@@ -138,33 +216,24 @@ SESSION_COOKIE_SECURE=False
 REMEMBER_COOKIE_SECURE=False
 ```
 
-#### Generate Secret Key
+**⚠️ Common Mistake:** Make sure there are **NO spaces** around the `=` sign in the `.env` file.
 
-**Linux/macOS:**
-```bash
-python3 -c "import secrets; print(secrets.token_hex(32))"
-```
-
-**Windows:**
-```cmd
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-#### Password Requirements
-
-Admin password must contain:
-- At least 8 characters
-- At least one uppercase letter
-- At least one lowercase letter
-- At least one number
-- At least one special character (!@#$%^&*(),.?":{}|<>)
+✅ Correct: `ADMIN_NAME=admin`  
+❌ Wrong: `ADMIN_NAME = admin`
 
 ### Database Initialization
 
 The database will be automatically created on first run. The application will:
 1. Create all necessary tables
-2. Create the admin user from config
+2. Create the admin user from your `.env` configuration
 3. Initialize the database schema
+
+**⚠️ IMPORTANT:** If you see "Failed login attempt for non-existent user" error:
+- This means `ADMIN_NAME` or `ADMIN_PASSWORD` was not set in your `.env` file
+- Stop the application (CTRL+C)
+- Delete the database file: `rm app.db` (Linux/macOS) or `del app.db` (Windows)
+- Set `ADMIN_NAME` and `ADMIN_PASSWORD` in `.env`
+- Restart the application
 
 ### Running the Application
 
@@ -457,8 +526,13 @@ Edit `config.py` to customize:
 ### First Login
 
 1. Navigate to `http://localhost:5004`
-2. Login with admin credentials from `.env` file
-3. Default username is set in `config.py` (check `USERS` section)
+2. Login with the credentials you set in `.env`:
+   - **Username:** The value you set for `ADMIN_NAME` (default: `admin`)
+   - **Password:** The value you set for `ADMIN_PASSWORD`
+
+**Example:**
+- If your `.env` has `ADMIN_NAME=admin` and `ADMIN_PASSWORD=Admin@123456`
+- Login with username: `admin` and password: `Admin@123456`
 
 ### Admin Tasks
 
@@ -503,6 +577,109 @@ Edit `config.py` to customize:
 2. Select category (DevOps/Developer)
 3. Choose request type
 4. Submit request
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. "Failed login attempt for non-existent user: admin"
+
+**Problem:** The admin user was not created in the database.
+
+**Solution:**
+```bash
+# Stop the application (CTRL+C)
+
+# Delete the database
+rm app.db  # Linux/macOS
+del app.db  # Windows
+
+# Make sure your .env file has these lines:
+# ADMIN_NAME=admin
+# ADMIN_PASSWORD=YourPassword@123!
+
+# Restart the application
+python flask_employee_portal_app.py
+```
+
+#### 2. "SECRET_KEY environment variable must be set"
+
+**Problem:** The `SECRET_KEY` is missing or empty in `.env`.
+
+**Solution:**
+```bash
+# Generate a secret key
+python -c "import secrets; print(secrets.token_hex(32))"
+
+# Add it to your .env file:
+# SECRET_KEY=the-generated-key-here
+```
+
+#### 3. "BuildError: Could not build url for endpoint 'admin_employee_details'"
+
+**Problem:** Template file is outdated or corrupted.
+
+**Solution:**
+- Make sure you have the latest version of all template files
+- Check `templates/layouts/_layout.html` for any references to non-existent routes
+- The correct route names are:
+  - `admin_employees_list` (view all employees)
+  - `admin_employees_manage` (manage employees)
+  - `employee_details` (employee's own profile)
+
+#### 4. Port Already in Use
+
+**Problem:** Port 5004 is already being used by another application.
+
+**Solution:**
+```bash
+# Option 1: Change the port in .env
+PORT=5005
+
+# Option 2: Kill the process using port 5004
+# Linux/macOS:
+lsof -ti:5004 | xargs kill -9
+
+# Windows:
+netstat -ano | findstr :5004
+taskkill /PID <PID> /F
+```
+
+#### 5. Email Not Sending
+
+**Problem:** Automated emails are not being sent.
+
+**Solution:**
+- Make sure `MAIL_USERNAME` and `MAIL_PASSWORD` are set in `.env`
+- For Gmail, use an App Password, not your regular password
+- Check that `ENABLE_SCHEDULER=True` if you want automated birthday/anniversary emails
+- Test your SMTP settings with a simple email client first
+
+#### 6. Database Locked Error
+
+**Problem:** SQLite database is locked (common in production).
+
+**Solution:**
+- SQLite is not recommended for production with multiple users
+- Migrate to PostgreSQL or MySQL for production use
+- See "Migration to PostgreSQL" section below
+
+#### 7. Permission Denied on Linux
+
+**Problem:** Cannot write to database or log files.
+
+**Solution:**
+```bash
+# Give proper permissions to the application directory
+sudo chown -R $USER:$USER /path/to/flask_employee_portal_app
+chmod -R 755 /path/to/flask_employee_portal_app
+
+# Make sure instance directory exists and is writable
+mkdir -p instance
+chmod 755 instance
+```
 
 ---
 
